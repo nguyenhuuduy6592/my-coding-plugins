@@ -5,8 +5,8 @@ After pushing this repository to GitHub, follow these steps to add it as a Claud
 ## Step 1: Create GitHub Repository
 
 ```bash
-# From the claude-plugins directory
-git remote add origin https://github.com/YOUR_USERNAME/claude-plugins.git
+# From the my-coding-plugins directory
+git remote add origin https://github.com/YOUR_USERNAME/my-coding-plugins.git
 git branch -M main
 git push -u origin main
 ```
@@ -16,12 +16,12 @@ git push -u origin main
 Edit `C:\Users\YOUR_USER\.claude\plugins\known_marketplaces.json`:
 
 ```json
-"claude-plugins": {
+"my-coding-plugins": {
   "source": {
     "source": "github",
-    "repo": "YOUR_USERNAME/claude-plugins"
+    "repo": "YOUR_USERNAME/my-coding-plugins"
   },
-  "installLocation": "C:\\Users\\YOUR_USER\\.claude\\plugins\\marketplaces\\claude-plugins",
+  "installLocation": "C:\\Users\\YOUR_USER\\.claude\\plugins\\marketplaces\\my-coding-plugins",
   "lastUpdated": "2025-12-28T00:00:00.000Z"
 }
 ```
@@ -45,7 +45,7 @@ Claude Code will automatically discover and load the marketplace.
 ```
 C:\Users\YOUR_USER\.claude\plugins\
 ├── marketplaces/
-│   └── claude-plugins/           # Cloned from your GitHub repo
+│   └── my-coding-plugins/           # Cloned from your GitHub repo
 │       ├── .claude-plugin/
 │       │   └── marketplace.json
 │       └── worktree-dev/
@@ -56,7 +56,7 @@ C:\Users\YOUR_USER\.claude\plugins\
 
 To add new plugins or update existing ones:
 
-1. Edit files in `D:\Code\Personal\claude-plugins\`
+1. Edit files in `D:\Code\Personal\my-coding-plugins\`
 2. Commit and push to GitHub
 3. Claude Code will pull updates automatically
 
@@ -66,17 +66,17 @@ To test marketplace changes before pushing:
 
 1. Copy marketplace files to local marketplace:
    ```bash
-   cp -r D:\Code\Personal\claude-plugins C:\Users\YOUR_USER\.claude\plugins\marketplaces\
+   cp -r D:\Code\Personal\my-coding-plugins C:\Users\YOUR_USER\.claude\plugins\marketplaces\
    ```
 
 2. Update `known_marketplaces.json` to use `directory` source:
    ```json
-   "claude-plugins": {
+   "my-coding-plugins": {
      "source": {
        "source": "directory",
-       "path": "D:\\Code\\Personal\\claude-plugins"
+       "path": "D:\\Code\\Personal\\my-coding-plugins"
      },
-     "installLocation": "C:\\Users\\YOUR_USER\\.claude\\plugins\\marketplaces\\claude-plugins",
+     "installLocation": "C:\\Users\\YOUR_USER\\.claude\\plugins\\marketplaces\\my-coding-plugins",
      "lastUpdated": "2025-12-28T00:00:00.000Z"
    }
    ```

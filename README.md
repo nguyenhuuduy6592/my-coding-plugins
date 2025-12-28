@@ -12,12 +12,12 @@ Add this marketplace to Claude Code by editing `known_marketplaces.json`:
 
 **Add this entry**:
 ```json
-"claude-plugins": {
+"my-coding-plugins": {
   "source": {
     "source": "github",
-    "repo": "YOUR_USERNAME/claude-plugins"
+    "repo": "YOUR_USERNAME/my-coding-plugins"
   },
-  "installLocation": "C:\\Users\\YOUR_USER\\.claude\\plugins\\marketplaces\\claude-plugins",
+  "installLocation": "C:\\Users\\YOUR_USER\\.claude\\plugins\\marketplaces\\my-coding-plugins",
   "lastUpdated": "2025-12-28T00:00:00.000Z"
 }
 ```
