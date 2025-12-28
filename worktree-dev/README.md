@@ -18,6 +18,22 @@ Streamlined git worktree workflow with integrated feature-dev guidance for paral
 
 This plugin is installed globally and available in all Claude Code sessions.
 
+### Updating the Plugin
+
+When changes are made to the plugin (e.g., command improvements, bug fixes):
+
+```bash
+/plugin update worktree-dev
+```
+
+Or reinstall to force refresh:
+
+```bash
+/plugin install worktree-dev --force
+```
+
+Claude Code will automatically reload the updated command definitions.
+
 ## Prerequisites
 
 - Git installed and configured
@@ -152,4 +168,4 @@ project/
 
 ## Version
 
-0.1.0
+0.2.0

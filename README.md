@@ -24,6 +24,32 @@ After adding the marketplace, install plugins using:
 /plugin install worktree-dev
 ```
 
+### Updating Plugins
+
+When the marketplace is updated with new versions:
+
+```bash
+/plugin update worktree-dev
+```
+
+Or reinstall to force refresh:
+
+```bash
+/plugin install worktree-dev --force
+```
+
+Claude Code will automatically reload the updated command definitions after the update.
+
+### Refreshing the Marketplace
+
+When the marketplace itself is updated (new plugins added, versions changed):
+
+```bash
+/marketplace
+```
+
+Use the `Tab` key to switch to the `Marketplaces` tab, select your marketplace, and click **Refresh** to fetch the latest changes.
+
 ## Available Plugins
 
 ### worktree-dev
