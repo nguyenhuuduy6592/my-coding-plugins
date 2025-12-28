@@ -6,27 +6,17 @@ Personal collection of Claude Code plugins for enhanced productivity and workflo
 
 ### Add Marketplace
 
-Add this marketplace to Claude Code by editing `known_marketplaces.json`:
+Run this command in Claude Code to add the marketplace:
 
-**File location**: `C:\Users\YOUR_USER\.claude\plugins\known_marketplaces.json`
-
-**Add this entry**:
-```json
-"my-coding-plugins": {
-  "source": {
-    "source": "github",
-    "repo": "YOUR_USERNAME/my-coding-plugins"
-  },
-  "installLocation": "C:\\Users\\YOUR_USER\\.claude\\plugins\\marketplaces\\my-coding-plugins",
-  "lastUpdated": "2025-12-28T00:00:00.000Z"
-}
+```bash
+/marketplace add github YOUR_USERNAME/my-coding-plugins
 ```
 
 Replace `YOUR_USERNAME` with your GitHub username.
 
 ### Install Plugins
 
-After adding the marketplace, restart Claude Code and install plugins:
+After adding the marketplace, install plugins using:
 
 ```bash
 /plugin install worktree-dev
