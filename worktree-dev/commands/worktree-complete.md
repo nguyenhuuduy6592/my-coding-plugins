@@ -59,7 +59,7 @@ Determine which worktree to complete:
 Terminate any Node.js processes running in the worktree:
 
 ```bash
-powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'node.exe' -and $_.CommandLine -like '*<worktree-full-path>*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"
+powershell -NoProfile -Command 'Get-CimInstance Win32_Process | Where-Object { $_.Name -eq \"node.exe\" -and $_.CommandLine -like \"*D:\\Code\\Personal\\my-coding-plugins\\.tree\\test-ps-2*\" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }'
 ```
 
 Where `<worktree-full-path>` is the absolute path to `.tree/<folder-name>`.
