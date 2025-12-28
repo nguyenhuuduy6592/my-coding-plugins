@@ -9,10 +9,12 @@ Personal collection of Claude Code plugins for enhanced productivity and workflo
 Run this command in Claude Code to add the marketplace:
 
 ```bash
-/marketplace add github YOUR_USERNAME/my-coding-plugins
+/marketplace
 ```
 
-Replace `YOUR_USERNAME` with your GitHub username.
+Use the `Tab` key to switch to the `Marketplaces` tab
+Select `+ Add Marketplace`
+Enter: `YOUR_USERNAME/my-coding-plugins`. Replace `YOUR_USERNAME` with your GitHub username.
 
 ### Install Plugins
 
