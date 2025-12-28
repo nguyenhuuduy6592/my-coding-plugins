@@ -166,6 +166,22 @@ project/
 - [Git Worktrees Documentation](https://git-scm.com/docs/git-worktree)
 - [feature-dev Plugin](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev)
 
+## Version History
+
+### 0.3.0 (2025-12-28)
+- Fix `worktree-complete`: Update Powershell command to kill node.exe for the worktree folder before merge
+
+### 0.2.0 (2025-12-28)
+- Update `worktree-dev` to have optional branch name
+- If branch name is not available, asking for context to auto-generate
+
+### 0.1.0 (2025-12-28)
+- Initial stable release
+- Integrated feature-dev workflow
+- Auto-generated branch names
+- Smart worktree detection
+- AI-assisted merge conflict resolution
+
 ## Version
 
-0.2.0
+0.3.0

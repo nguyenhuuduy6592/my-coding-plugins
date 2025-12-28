@@ -1,6 +1,6 @@
 {
   "name": "worktree-dev",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Streamlined git worktree workflow with integrated feature-dev guidance for parallel feature development",
   "author": {
     "name": "Claude Code User"
