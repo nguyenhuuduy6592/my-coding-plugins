@@ -1,21 +1,52 @@
-# Claude Plugins
+# Claude Plugins Marketplace
 
-Personal collection of Claude Code plugins.
+Personal collection of Claude Code plugins for enhanced productivity and workflow automation.
 
-## Plugins
+## Installation
+
+### Add Marketplace
+
+Add this marketplace to Claude Code by editing `known_marketplaces.json`:
+
+**File location**: `C:\Users\YOUR_USER\.claude\plugins\known_marketplaces.json`
+
+**Add this entry**:
+```json
+"claude-plugins": {
+  "source": {
+    "source": "github",
+    "repo": "YOUR_USERNAME/claude-plugins"
+  },
+  "installLocation": "C:\\Users\\YOUR_USER\\.claude\\plugins\\marketplaces\\claude-plugins",
+  "lastUpdated": "2025-12-28T00:00:00.000Z"
+}
+```
+
+Replace `YOUR_USERNAME` with your GitHub username.
+
+### Install Plugins
+
+After adding the marketplace, restart Claude Code and install plugins:
+
+```bash
+/plugin install worktree-dev
+```
+
+## Available Plugins
 
 ### worktree-dev
 
-Streamlined git worktree workflow with integrated feature-dev guidance for parallel feature development.
-
 **Version**: 0.1.0
+**Category**: Productivity
+
+Streamlined git worktree workflow with integrated feature-dev guidance for parallel feature development.
 
 **Features**:
 - Auto-generated branch names from context
 - Integrated feature-dev workflow
-- Smart worktree detection
+- Smart worktree detection with multi-worktree selection
 - AI-assisted merge conflict resolution
-- Automatic cleanup
+- Automatic cleanup of worktrees and branches
 
 **Usage**:
 ```bash
@@ -28,20 +59,42 @@ Streamlined git worktree workflow with integrated feature-dev guidance for paral
 /worktree-complete feature-name
 ```
 
-**Location**: `worktree-dev/`
-
-## Installation
-
-Each plugin is published to the official Claude marketplace. To install:
-
-```bash
-/plugin install worktree-dev
-```
-
 ## Development
 
-Plugins are developed using the [plugin-dev](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/plugin-dev) toolkit.
+### Adding New Plugins
+
+1. Create plugin directory: `mkdir plugin-name`
+2. Add plugin manifest: `plugin-name/.claude-plugin/plugin.json`
+3. Add commands, agents, or skills
+4. Update `marketplace.json` with plugin entry
+5. Commit and push to GitHub
+
+### Plugin Structure
+
+```
+plugin-name/
+├── .claude-plugin/
+│   └── plugin.json          # Required: Plugin manifest
+├── commands/                 # Slash commands (.md files)
+├── agents/                   # Subagent definitions (.md files)
+├── skills/                   # Agent skills (subdirectories)
+│   └── skill-name/
+│       └── SKILL.md
+├── hooks/
+│   └── hooks.json
+└── README.md
+```
 
 ## License
 
 MIT
+
+## Contributing
+
+This is a personal plugin collection. Feel free to fork and create your own marketplace!
+
+---
+
+**Official Documentation**:
+- [Claude Code Plugins](https://github.com/anthropics/claude-plugins-official)
+- [Plugin Development Guide](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/plugin-dev)
