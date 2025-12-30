@@ -13,7 +13,7 @@ Merge a git worktree back to the main branch and clean up, with intelligent conf
 
 This command handles the complete workflow of:
 1. Detecting the target worktree
-2. Killing any running processes in the worktree
+2. Switching to main branch
 3. Merging the worktree branch to main
 4. AI-assisted merge conflict resolution (if needed)
 5. Cleaning up the worktree and branch
@@ -54,19 +54,7 @@ Determine which worktree to complete:
 
 **If folder-name argument provided**: Use it directly (skip detection)
 
-### Step 2: Kill Processes
-
-Terminate any Node.js processes running in the worktree:
-
-```bash
-powershell -NoProfile -Command 'Get-CimInstance Win32_Process | Where-Object { $_.Name -eq \"node.exe\" -and $_.CommandLine -like \"*D:\\Code\\Personal\\my-coding-plugins\\.tree\\test-ps-2*\" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }'
-```
-
-Where `<worktree-full-path>` is the absolute path to `.tree/<folder-name>`.
-
-Continue even if no processes are found (not an error).
-
-### Step 3: Switch to Main
+### Step 2: Switch to Main
 
 Switch to the main branch:
 
@@ -74,9 +62,16 @@ Switch to the main branch:
 git checkout main
 ```
 
-If this fails, report the error and stop.
+If this fails, ask user for next action using AskUserQuestion:
+- Question: "Failed to switch to main. What would you like to do?"
+- Options:
+  - Retry
+  - Cancel
 
-### Step 4: Attempt Merge
+If user chooses Retry: Retry the command
+If user chooses Cancel: Stop and inform user
+
+### Step 3: Attempt Merge
 
 Attempt to merge the worktree branch to main:
 
@@ -84,11 +79,11 @@ Attempt to merge the worktree branch to main:
 git merge <folder-name>
 ```
 
-**If merge succeeds**: Proceed to Step 7 (Cleanup)
+**If merge succeeds**: Proceed to Step 6 (Cleanup)
 
-**If merge has conflicts**: Proceed to Step 5 (Conflict Resolution)
+**If merge has conflicts**: Proceed to Step 4 (Conflict Resolution)
 
-### Step 5: Conflict Resolution - Abort and Reverse
+### Step 4: Conflict Resolution - Abort and Reverse
 
 When conflicts are detected:
 
@@ -107,7 +102,7 @@ When conflicts are detected:
    git merge main
    ```
 
-### Step 6: AI-Assisted Conflict Resolution
+### Step 5: AI-Assisted Conflict Resolution
 
 Attempt to resolve conflicts using AI:
 
@@ -153,11 +148,11 @@ Use AskUserQuestion to ask user:
   - Yes, restart merge flow
   - No, I'll handle it manually
 
-If user chooses Yes: Return to Step 3 (Switch to Main)
+If user chooses Yes: Return to Step 2 (Switch to Main)
 
 If user chooses No: Inform user worktree remains and they can complete manually later.
 
-### Step 7: Cleanup
+### Step 6: Cleanup
 
 Once merge to main is successful:
 
@@ -192,15 +187,21 @@ Directly completes the `feature-add-search` worktree.
 ## Important Notes
 
 - **Location**: Can be run from any directory in the repository
-- **Safety**: Killing processes ensures ports and files are released before merging
 - **Conflict handling**: Conflicts are resolved in the worktree, keeping main clean
 - **Data preservation**: AI attempts to preserve changes from both branches during conflict resolution
 
 ## Error Handling
 
-- If `git checkout main` fails: Report error and stop
-- If `git worktree remove` fails: Force remove with `git worktree remove --force`
-- If user cancels conflict resolution: Worktree remains, user can retry later
+For any step that fails, use AskUserQuestion to ask user for next action:
+- Question: "Step failed. What would you like to do?"
+- Options:
+  - Retry
+  - Skip this step
+  - Cancel
+
+If user chooses Retry: Retry the failed step
+If user chooses Skip: Continue to next step
+If user chooses Cancel: Stop and inform user
 
 ## Merge Conflict Behavior
 
