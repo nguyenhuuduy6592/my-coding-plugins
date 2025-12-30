@@ -2,7 +2,7 @@
 name: worktree-complete
 description: Merge a worktree back to main and clean up, with AI-assisted conflict resolution
 argument-hint: "[folder-name]"
-allowed-tools: ["Bash", "Read", "Edit", "AskUserQuestion", "Glob"]
+allowed-tools: ["Bash", "Read", "Edit", "AskUserQuestion", "Glob", "git worktree list"]
 ---
 
 # worktree-complete
@@ -31,10 +31,10 @@ Use this command when you:
 
 Determine which worktree to complete:
 
-**Auto-detection from current directory**:
+**If current working directory is under `.tree/`**:
 1. Check if current working directory path contains `.tree/`
 2. Extract worktree name from path (e.g., from `D:\Code\project\.tree\feature-branch`, extract `feature-branch`)
-3. Verify worktree exists using `git worktree list`
+3. Use this name directly (skip `git worktree list`)
 
 **If not in a worktree**:
 1. Run `git worktree list` to get all worktrees
