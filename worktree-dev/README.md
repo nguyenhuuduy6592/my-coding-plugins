@@ -168,6 +168,11 @@ project/
 
 ## Version History
 
+### 0.4.0 (2025-12-30)
+- Remove process killing step from `worktree-complete`
+- Add error handling with user prompts for any failed step
+- Improve worktree detection: use current directory name if already in `.tree/`
+
 ### 0.3.0 (2025-12-28)
 - Fix `worktree-complete`: Update Powershell command to kill node.exe for the worktree folder before merge
 
@@ -184,4 +189,4 @@ project/
 
 ## Version
 
-0.3.0
+0.4.0
