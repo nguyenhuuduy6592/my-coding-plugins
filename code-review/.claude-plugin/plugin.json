@@ -1,0 +1,10 @@
+{
+  "name": "code-review",
+  "version": "0.1.0",
+  "description": "Comprehensive multi-dimensional pull request code review with specialized parallel reviewers",
+  "author": {
+    "name": "",
+    "email": ""
+  },
+  "keywords": ["code-review", "pull-request", "pr", "review", "github"]
+}

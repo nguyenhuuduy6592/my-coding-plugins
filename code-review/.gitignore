@@ -1,0 +1,13 @@
+# Local plugin settings
+.claude/*.local.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
