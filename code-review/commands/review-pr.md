@@ -154,39 +154,141 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
    - Display: "This PR has no commits unique to ${BASE_BRANCH}. It may already be merged."
    - Exit gracefully
 
-12. Launch all 5 reviewer agents in parallel using a single message with multiple Task tool calls:
+12. Construct the agent prompt with actual values substituted (for example, if PR_ID=254 and BASE_BRANCH=develop):
+
+   PROMPT_TEMPLATE="Review the pull request with ID {PR_ID}. The changes are between {BASE_BRANCH} and pr-{PR_ID}-temp.
+
+   Run this command to see the full diff:
+   git diff \"{BASE_BRANCH}...pr-{PR_ID}-temp\"
+
+   Analyze ONLY the code introduced in those new commits (not the entire file).
+
+   Provide your specialized review following your system prompt output format."
+
+   Substitute {PR_ID} with the actual PR ID number and {BASE_BRANCH} with the actual base branch name.
+
+13. Display: "Launching 5 parallel specialized reviewers..."
+
+14. Launch all 5 reviewer agents in parallel using a SINGLE message with FIVE Task tool calls:
    - `bug-correctness-reviewer` - Analyze for bugs and correctness issues
    - `security-reviewer` - Analyze for security vulnerabilities
    - `performance-reviewer` - Analyze for performance issues
    - `code-quality-reviewer` - Analyze for code quality issues
    - `architecture-reviewer` - Analyze for architecture and best practices
 
-   Set timeout to 600000ms (10 minutes) for each agent.
-
-   Each agent should receive a prompt with the actual values substituted (for example, if PR_ID=254 and BASE_BRANCH=develop):
+   CRITICAL - Use this EXACT Task tool call format for each agent:
 
    ```
-   Review the pull request with ID 254. The changes are between develop and pr-254-temp.
+   Task tool call for bug-correctness-reviewer:
+   {
+     "subagent_type": "code-review:bug-correctness-reviewer",
+     "prompt": "<substituted prompt from step 12>",
+     "run_in_background": true,
+     "timeout": 600000
+   }
 
-   Run this command to see the full diff:
-   git diff "develop...pr-254-temp"
+   Task tool call for security-reviewer:
+   {
+     "subagent_type": "code-review:security-reviewer",
+     "prompt": "<substituted prompt from step 12>",
+     "run_in_background": true,
+     "timeout": 600000
+   }
 
-   Analyze ONLY the code introduced in those new commits (not the entire file).
+   Task tool call for performance-reviewer:
+   {
+     "subagent_type": "code-review:performance-reviewer",
+     "prompt": "<substituted prompt from step 12>",
+     "run_in_background": true,
+     "timeout": 600000
+   }
 
-   Provide your specialized review following your system prompt output format.
+   Task tool call for code-quality-reviewer:
+   {
+     "subagent_type": "code-review:code-quality-reviewer",
+     "prompt": "<substituted prompt from step 12>",
+     "run_in_background": true,
+     "timeout": 600000
+   }
+
+   Task tool call for architecture-reviewer:
+   {
+     "subagent_type": "code-review:architecture-reviewer",
+     "prompt": "<substituted prompt from step 12>",
+     "run_in_background": true,
+     "timeout": 600000
+   }
    ```
 
-   CRITICAL: You MUST substitute the actual PR_ID and BASE_BRANCH values in the prompt. Do NOT use placeholder variables like ${PR_ID} or ${BASE_BRANCH}.
+   IMPORTANT:
+   - Set `run_in_background: true` for ALL agents
+   - Set `timeout: 600000` (10 minutes) for all agents
+   - Send all 5 Task calls in ONE message
+   - Capture the returned task_id from each Task result
+
+15. After launching, display the captured task IDs in this format:
+   ```
+   Reviewer tasks launched:
+   - bug-correctness-reviewer: <task_id_1>
+   - security-reviewer: <task_id_2>
+   - performance-reviewer: <task_id_3>
+   - code-quality-reviewer: <task_id_4>
+   - architecture-reviewer: <task_id_5>
+   ```
+
+16. Verify all agents started successfully:
+   - If any Task call fails or returns an error, display: "Error: Failed to launch [agent-name]. Aborting review."
+   - If any task_id is missing, the review cannot proceed
 
 ### Phase 4: Collect and Synthesize Results
 
-13. Wait for all 5 agents to complete their reviews
+17. Collect agent outputs using TaskOutput with the captured task IDs from Phase 3 step 15:
 
-14. If any agent timed out, display: "Warning: [agent-name] timed out after 10 minutes. Results may be incomplete."
+   ```
+   TaskOutput tool call for bug-correctness-reviewer:
+   {
+     "task_id": "<task_id_1 from step 15>",
+     "block": true
+   }
 
-15. Collect all agent outputs and synthesize into a final report
+   TaskOutput tool call for security-reviewer:
+   {
+     "task_id": "<task_id_2 from step 15>",
+     "block": true
+   }
 
-16. As Lead Reviewer, provide:
+   TaskOutput tool call for performance-reviewer:
+   {
+     "task_id": "<task_id_3 from step 15>",
+     "block": true
+   }
+
+   TaskOutput tool call for code-quality-reviewer:
+   {
+     "task_id": "<task_id_4 from step 15>",
+     "block": true
+   }
+
+   TaskOutput tool call for architecture-reviewer:
+   {
+     "task_id": "<task_id_5 from step 15>",
+     "block": true
+   }
+   ```
+
+   IMPORTANT:
+   - Use `block: true` to wait for each agent to complete
+   - Send all 5 TaskOutput calls in ONE message for parallel retrieval
+   - Handle errors gracefully if an agent fails or times out
+
+18. Handle agent output errors:
+   - If any TaskOutput returns an error, display: "Warning: Failed to retrieve output from [agent-name]. Skipping their review."
+   - If any TaskOutput returns a timeout status, display: "Warning: [agent-name] timed out after 10 minutes. Results may be incomplete."
+   - Continue with the remaining agents' results
+
+19. Display: "Collecting and synthesizing reviews from all agents..."
+
+20. Synthesize all agent outputs into a final report:
 
    **Summary Section:**
    - PR ID and base branch used
@@ -215,7 +317,7 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
 
 ### Phase 5: Cleanup Reminder
 
-17. Show this message at the end:
+21. Show this message at the end:
    ```
    You can later clean up with: git branch -D pr-${PR_ID}-temp
    ```
@@ -303,6 +405,24 @@ Each agent will output structured markdown:
   - Check internet connection
   - Retry individual agent if one fails
   - Check Claude Code status
+
+**Error: "No task found with ID" when retrieving output**
+- **Cause**: Task ID was not properly captured or agent was not run in background
+- **Diagnosis**: Check that `run_in_background: true` was set when launching agents
+- **Solutions**:
+  - Verify agents were launched with `run_in_background: true`
+  - Ensure task IDs were captured after launching agents
+  - Check that task IDs are correctly passed to TaskOutput calls
+  - Review Phase 3 step 14 for proper agent launch syntax
+
+**Error: Agent returns 0 tool uses**
+- **Cause**: Agent encountered an error or didn't receive proper prompt
+- **Diagnosis**: Check agent prompt was properly formatted with substituted values
+- **Solutions**:
+  - Verify PR_ID and BASE_BRANCH were correctly substituted in prompt
+  - Check that git diff command in prompt uses correct branch names
+  - Ensure prompt format matches agent's expected input format
+  - Review Phase 3 step 12 for proper prompt construction
 
 ### Permission Errors
 
