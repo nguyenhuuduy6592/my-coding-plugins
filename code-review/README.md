@@ -110,6 +110,15 @@ Top 5-10 action items for the developer
 
 ## Version History
 
+### 0.3.0 (2025-12-31)
+- **Fix:** Critical issue where agents returned 0 tool uses and TaskOutput retrieval failed with "No task found with ID"
+- **Fix:** Added explicit `run_in_background: true` parameter to all Task tool calls for proper task ID generation
+- **Fix:** Added explicit TaskOutput syntax with `block: true` for proper result collection
+- **Improvement:** Added task ID capture and display format for better debugging
+- **Improvement:** Added agent launch verification and error handling steps
+- **Improvement:** Added prompt template with clear variable substitution instructions
+- **Documentation:** Added new troubleshooting sections for "No task found with ID" and "Agent returns 0 tool uses" errors
+
 ### 0.2.1 (2025-12-31)
 - **Fix:** Remove timestamp-related bash echo commands that were causing unnecessary user permission prompts
 - **Fix:** Agents now properly execute git diff commands instead of hallucinating reviews (fixed variable placeholder substitution issue)
@@ -140,4 +149,4 @@ Top 5-10 action items for the developer
 
 ## Version
 
-0.2.1
+0.3.0
