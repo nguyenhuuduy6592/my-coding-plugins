@@ -32,12 +32,12 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
 
 4. List all commits unique to the PR:
    ```bash
-   git log --oneline --graph ${BASE_BRANCH}..pr-${PR_ID}-temp
+   git log --oneline --graph ${BASE_BRANCH}...pr-${PR_ID}-temp
    ```
 
 5. Show diff stats summary:
    ```bash
-   git diff --stat ${BASE_BRANCH}..pr-${PR_ID}-temp
+   git diff --stat ${BASE_BRANCH}...pr-${PR_ID}-temp
    ```
 
 6. If no commits are found (PR already merged), show message and exit:
@@ -57,14 +57,14 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
    - PR ID
    - Base branch
    - Temp branch name (`pr-${PR_ID}-temp`)
-   - The git diff command to analyze: `git diff ${BASE_BRANCH}..pr-${PR_ID}-temp`
+   - The git diff command to analyze: `git diff ${BASE_BRANCH}...pr-${PR_ID}-temp`
 
    Use this prompt for each agent:
    ```
    Review the pull request with ID ${PR_ID}. The changes are between ${BASE_BRANCH} and pr-${PR_ID}-temp.
 
    Run this command to see the full diff:
-   git diff ${BASE_BRANCH}..pr-${PR_ID}-temp
+   git diff ${BASE_BRANCH}...pr-${PR_ID}-temp
 
    Analyze ONLY the code introduced in those new commits (not the entire file).
 
