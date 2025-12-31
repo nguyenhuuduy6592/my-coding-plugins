@@ -3,8 +3,7 @@
   "version": "0.4.1",
   "description": "Streamlined git worktree workflow with integrated feature-dev guidance for parallel feature development",
   "author": {
-    "name": "DuyNH",
-    "email": "nguyenhuuduy6592@gmail.com"
+    "name": "DuyNH"
   },
   "keywords": ["git", "worktree", "workflow", "feature-development"]
 }

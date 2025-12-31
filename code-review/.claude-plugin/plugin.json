@@ -1,10 +1,9 @@
 {
   "name": "code-review",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Comprehensive multi-dimensional pull request code review with specialized parallel reviewers",
   "author": {
-    "name": "DuyNH",
-    "email": "nguyenhuuduy6592@gmail.com"
+    "name": "DuyNH"
   },
   "keywords": ["code-review", "pull-request", "pr", "review", "git", "gitea", "github"]
 }

@@ -110,6 +110,13 @@ Top 5-10 action items for the developer
 
 ## Version History
 
+### 0.4.1 (2025-12-31)
+- **Critical Fix:** Agents no longer analyze wrong files - git diff content is now passed directly to agents
+  - The parent command now captures git diff output before launching agents
+  - Agents receive the complete diff content in their prompt instead of running git diff themselves
+  - This fixes the issue where background agents would analyze files from a different codebase
+  - All 5 reviewers updated to use provided diff content instead of running git commands
+
 ### 0.4.0 (2025-12-31)
 - **Fix:** Critical issue where agents analyzed wrong project instead of PR content
   - Added explicit instruction to run git diff FIRST before any file exploration
@@ -164,4 +171,4 @@ Top 5-10 action items for the developer
 
 ## Version
 
-0.4.0
+0.4.1

@@ -136,27 +136,39 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
    fi
    ```
 
-10. Check diff size:
+10. Capture the git diff output (CRITICAL - must be done before launching agents):
    ```bash
-   DIFF_SIZE=$(git diff "${BASE_BRANCH}...pr-${PR_ID}-temp" | wc -l)
+   echo "Capturing git diff for agent analysis..."
+   PR_DIFF=$(git diff "${BASE_BRANCH}...pr-${PR_ID}-temp")
+   DIFF_SIZE=$(echo "$PR_DIFF" | wc -l)
+
    if [ "$DIFF_SIZE" -gt 1000 ]; then
        echo "Large diff detected (${DIFF_SIZE} lines). Agents will focus on critical/high-severity issues only."
    fi
    ```
 
-11. Construct agent prompt (substitute {PR_ID} and {BASE_BRANCH} with actual values):
+11. Construct agent prompt (substitute {PR_ID}, {BASE_BRANCH}, and {PR_DIFF} with actual values):
    ```
-   CRITICAL: First step is to IMMEDIATELY run this git command:
-   git diff "{BASE_BRANCH}...pr-{PR_ID}-temp"
+   CRITICAL: You are reviewing PR #{PR_ID} against base branch "{BASE_BRANCH}".
 
-   Do NOT explore any files before running this command. This git diff shows ALL the changes for PR #{PR_ID}.
+   Below is the COMPLETE git diff output for this PR. Analyze ONLY this diff content:
 
-   After getting the diff, analyze ONLY the code introduced in those new commits (not the entire file).
+   --- START OF GIT DIFF ---
+   {PR_DIFF}
+   --- END OF GIT DIFF ---
+
+   IMPORTANT INSTRUCTIONS:
+   - Analyze ONLY the code shown in the diff above (lines added/modified with + prefix)
+   - Do NOT explore any files with Glob/Grep/Read - the diff contains everything you need
+   - Do NOT analyze files from the current working directory
+   - Focus your review on the changes shown in this diff
 
    Provide your specialized review following your system prompt output format.
    ```
 
-   If DIFF_SIZE > 1000, append: "IMPORTANT: This is a LARGE diff. Focus only on CRITICAL and HIGH severity issues. Limit your output to top 5-7 most important findings."
+   If DIFF_SIZE > 1000, append: "IMPORTANT: This is a LARGE diff (${DIFF_SIZE} lines). Focus only on CRITICAL and HIGH severity issues. Limit your output to top 5-7 most important findings."
+
+   NOTE: The {PR_DIFF} placeholder will be replaced with the actual git diff output. Be sure to include the complete diff content when launching agents.
 
 12. Launch all 5 reviewer agents in parallel using a SINGLE message with FIVE Task tool calls:
    - `bug-correctness-reviewer`

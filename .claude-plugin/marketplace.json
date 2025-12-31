@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "description": "Personal collection of Claude Code plugins for enhanced productivity and workflow automation",
   "owner": {
-    "name": "Claude Code User"
+    "name": "DuyNH"
   },
   "plugins": [
     {
@@ -12,21 +12,22 @@
       "description": "Streamlined git worktree workflow with integrated feature-dev guidance for parallel feature development",
       "version": "0.4.1",
       "author": {
-        "name": "Claude Code User"
+        "name": "DuyNH"
       },
       "source": "./worktree-dev",
-      "category": "productivity"
+      "category": "productivity",
+      "keywords": ["git", "worktree", "workflow", "feature-development"]
     },
     {
       "name": "code-review",
-      "description": "Comprehensive multi-dimensional pull request code review with 5 parallel specialized reviewers",
-      "version": "0.4.0",
+      "description": "Comprehensive multi-dimensional pull request code review with specialized parallel reviewers",
+      "version": "0.4.1",
       "author": {
-        "name": "Claude Code User"
+        "name": "DuyNH"
       },
       "source": "./code-review",
       "category": "code-quality",
-      "keywords": ["code-review", "pull-request", "pr", "review", "git", "gitea", "github", "bug", "security", "performance"]
+      "keywords": ["code-review", "pull-request", "pr", "review", "git", "gitea", "github"]
     }
   ]
 }
