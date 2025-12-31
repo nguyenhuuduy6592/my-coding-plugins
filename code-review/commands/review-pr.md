@@ -1,7 +1,7 @@
 ---
 description: Multi-dimensional PR review with parallel specialized reviewers
 argument-hint: [pr-number] [base-branch]
-allowed-tools: Bash(git:*), Read, Task, AskUserQuestion
+allowed-tools: Bash, Read, Task, AskUserQuestion
 ---
 
 # review-pr - Pull Request Code Review
