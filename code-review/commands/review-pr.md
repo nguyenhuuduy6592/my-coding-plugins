@@ -163,8 +163,6 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
 
    Set timeout to 600000ms (10 minutes) for each agent.
 
-   First, capture and display the start time: "Starting 5 parallel reviewers at [HH:MM:SS]..."
-
    Each agent should receive:
    - PR ID
    - Base branch
@@ -187,15 +185,11 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
 
 13. Wait for all 5 agents to complete their reviews
 
-14. Capture and display the end time: "All 5 reviewers completed at [HH:MM:SS]"
+14. If any agent timed out, display: "Warning: [agent-name] timed out after 10 minutes. Results may be incomplete."
 
-15. Calculate and display the total duration: "Total review time: X minutes Y seconds"
+15. Collect all agent outputs and synthesize into a final report
 
-16. If any agent timed out, display: "Warning: [agent-name] timed out after 10 minutes. Results may be incomplete."
-
-17. Collect all agent outputs and synthesize into a final report
-
-18. As Lead Reviewer, provide:
+16. As Lead Reviewer, provide:
 
    **Summary Section:**
    - PR ID and base branch used
@@ -224,7 +218,7 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
 
 ### Phase 5: Cleanup Reminder
 
-19. Show this message at the end:
+17. Show this message at the end:
    ```
    You can later clean up with: git branch -D pr-${PR_ID}-temp
    ```
