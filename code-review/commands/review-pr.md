@@ -1,5 +1,7 @@
 ---
-description: Comprehensive multi-dimensional pull request review with 5 parallel specialized reviewers
+description: Multi-dimensional PR review with parallel specialized reviewers
+argument-hint: [pr-number] [base-branch]
+allowed-tools: Bash(git:*), Read, Task, AskUserQuestion
 ---
 
 # review-pr - Pull Request Code Review
@@ -10,13 +12,15 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
 
 ### Phase 1: Gather PR Information
 
-1. Ask the user for the PR ID (just the number, e.g., `271`)
+1. Determine PR_ID and BASE_BRANCH from arguments or user input:
+   - If `$1` is provided, use it as PR_ID
+   - If `$1` is not provided, ask the user for the PR ID (just the number, e.g., `271`)
    - Wait for user to provide the PR ID before proceeding
 
-2. Ask the user for the base branch to compare against
-   - Default: `develop`
-   - Allow user to change it (e.g., `main`, `master`)
-   - Present as: "Base branch to compare against (default: develop)?"
+2. Determine BASE_BRANCH:
+   - If `$2` is provided, use it as BASE_BRANCH
+   - If `$2` is not provided, use `develop` as the default
+   - Display: "Using base branch: ${BASE_BRANCH}"
 
 ### Phase 2: Fetch and Show PR Overview
 
@@ -73,11 +77,11 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
    fi
    ```
 
-4. If the above outputs `TEMP_BRANCH_CURRENT_UP_TO_DATE`:
-   - Show message: "Local branch pr-${PR_ID}-temp is up-to-date with the remote PR. Using existing branch."
-   - Proceed directly to step 8 (list commits)
+4. If the bash output indicates the temp branch is current and up-to-date:
+   - Display: "Local branch pr-${PR_ID}-temp is up-to-date with the remote PR. Using existing branch."
+   - Skip to step 8 (list commits)
 
-5. If the above outputs `TEMP_BRANCH_CURRENT_STALE`, use `AskUserQuestion`:
+5. If the bash output indicates the temp branch is stale (current branch is behind remote), prompt the user using `AskUserQuestion`:
    ```json
    {
      "questions": [
@@ -138,7 +142,19 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
 
 ### Phase 3: Launch 5 Parallel Reviewers
 
-11. Launch all 5 reviewer agents in parallel using a single message with multiple Task tool calls:
+11. Before launching agents, verify the PR has commits to review:
+   ```bash
+   COMMITS=$(git log --oneline "${BASE_BRANCH}...pr-${PR_ID}-temp" | wc -l)
+   if [ "$COMMITS" -eq 0 ]; then
+       echo "NO_COMMITS"
+   fi
+   ```
+
+   If the output is `NO_COMMITS`:
+   - Display: "This PR has no commits unique to ${BASE_BRANCH}. It may already be merged."
+   - Exit gracefully
+
+12. Launch all 5 reviewer agents in parallel using a single message with multiple Task tool calls:
    - `bug-correctness-reviewer` - Analyze for bugs and correctness issues
    - `security-reviewer` - Analyze for security vulnerabilities
    - `performance-reviewer` - Analyze for performance issues
@@ -147,7 +163,7 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
 
    Set timeout to 600000ms (10 minutes) for each agent.
 
-   Before launching, capture and display the start time: "Starting 5 parallel reviewers at [HH:MM:SS]..."
+   First, capture and display the start time: "Starting 5 parallel reviewers at [HH:MM:SS]..."
 
    Each agent should receive:
    - PR ID
@@ -169,17 +185,17 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
 
 ### Phase 4: Collect and Synthesize Results
 
-12. Wait for all 5 agents to complete their reviews
+13. Wait for all 5 agents to complete their reviews
 
-13. Capture and display the end time: "All 5 reviewers completed at [HH:MM:SS]"
+14. Capture and display the end time: "All 5 reviewers completed at [HH:MM:SS]"
 
-14. Calculate and display the total duration: "Total review time: X minutes Y seconds"
+15. Calculate and display the total duration: "Total review time: X minutes Y seconds"
 
-15. If any agent timed out, display: "Warning: [agent-name] timed out after 10 minutes. Results may be incomplete."
+16. If any agent timed out, display: "Warning: [agent-name] timed out after 10 minutes. Results may be incomplete."
 
-16. Collect all agent outputs and synthesize into a final report
+17. Collect all agent outputs and synthesize into a final report
 
-17. As Lead Reviewer, provide:
+18. As Lead Reviewer, provide:
 
    **Summary Section:**
    - PR ID and base branch used
@@ -208,7 +224,7 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
 
 ### Phase 5: Cleanup Reminder
 
-18. Show this message at the end:
+19. Show this message at the end:
    ```
    You can later clean up with: git branch -D pr-${PR_ID}-temp
    ```
