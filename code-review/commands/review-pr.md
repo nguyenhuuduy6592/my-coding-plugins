@@ -163,23 +163,20 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
 
    Set timeout to 600000ms (10 minutes) for each agent.
 
-   Each agent should receive:
-   - PR ID
-   - Base branch
-   - Temp branch name (`pr-${PR_ID}-temp`)
-   - The git diff command to analyze: `git diff "${BASE_BRANCH}...pr-${PR_ID}-temp"`
+   Each agent should receive a prompt with the actual values substituted (for example, if PR_ID=254 and BASE_BRANCH=develop):
 
-   Use this prompt for each agent:
    ```
-   Review the pull request with ID ${PR_ID}. The changes are between ${BASE_BRANCH} and pr-${PR_ID}-temp.
+   Review the pull request with ID 254. The changes are between develop and pr-254-temp.
 
    Run this command to see the full diff:
-   git diff "${BASE_BRANCH}...pr-${PR_ID}-temp"
+   git diff "develop...pr-254-temp"
 
    Analyze ONLY the code introduced in those new commits (not the entire file).
 
    Provide your specialized review following your system prompt output format.
    ```
+
+   CRITICAL: You MUST substitute the actual PR_ID and BASE_BRANCH values in the prompt. Do NOT use placeholder variables like ${PR_ID} or ${BASE_BRANCH}.
 
 ### Phase 4: Collect and Synthesize Results
 
