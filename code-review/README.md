@@ -38,8 +38,8 @@ You will be prompted for:
 
 The plugin will:
 1. Fetch the PR head safely: `git fetch origin pull/${PR_ID}/head:pr-${PR_ID}-temp`
-2. List all commits on the PR: `git log --oneline --graph develop..pr-${PR_ID}-temp`
-3. Show diff stats: `git diff --stat develop..pr-${PR_ID}-temp`
+2. List all commits on the PR: `git log --oneline --graph develop...pr-${PR_ID}-temp`
+3. Show diff stats: `git diff --stat develop...pr-${PR_ID}-temp`
 4. Launch 5 parallel specialized reviewers
 5. Provide a final verdict with:
    - Critical blockers (if any)
@@ -103,6 +103,13 @@ Top 5-10 action items for the developer
 
 ## Version History
 
+### 0.1.2 (2025-12-31)
+- Fix: Use three-dot diff (`...`) instead of two-dot diff (`..`) to show only PR-specific changes
+- This prevents showing unrelated "removed" code from other merged branches
+
+### 0.1.1 (2025-12-31)
+- Fix: Plugin author nane
+
 ### 0.1.0 (2025-12-31)
 - Initial release
 - 5 parallel specialized reviewers (Bug, Security, Performance, Code Quality, Architecture)
@@ -113,4 +120,4 @@ Top 5-10 action items for the developer
 
 ## Version
 
-0.1.0
+0.1.2
