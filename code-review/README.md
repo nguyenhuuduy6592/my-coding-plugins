@@ -29,12 +29,19 @@ cp -r code-review ~/.claude/plugins/
 ### Review a Pull Request
 
 ```bash
+# Quick review with default base branch (develop)
+/code-review:review-pr 271
+
+# Specify both PR number and base branch
+/code-review:review-pr 271 main
+
+# Interactive mode (prompts for PR number)
 /code-review:review-pr
 ```
 
-You will be prompted for:
+The command accepts:
 1. **PR ID** – The pull request number (e.g., `271`)
-2. **Base branch** – The branch to compare against (default: `develop`)
+2. **Base branch** (optional) – The branch to compare against (default: `develop`)
 
 The plugin will:
 1. Fetch the PR head safely: `git fetch origin pull/${PR_ID}/head:pr-${PR_ID}-temp`
@@ -103,6 +110,14 @@ Top 5-10 action items for the developer
 
 ## Version History
 
+### 0.2.0 (2025-12-31)
+- **Feature:** Add command argument support for faster usage (`/code-review:review-pr 271 main`)
+- **Feature:** Auto-use `develop` as default base branch without prompting
+- **Improvement:** Add proper frontmatter fields (`allowed-tools`, `argument-hint`)
+- **Improvement:** Add validation to prevent launching agents on empty/merged PRs
+- **Refactor:** Rewrite documentation-style sections as direct Claude instructions
+- **UX:** Display "Using base branch: X" message for clarity
+
 ### 0.1.2 (2025-12-31)
 - Fix: Use three-dot diff (`...`) instead of two-dot diff (`..`) to show only PR-specific changes
 - This prevents showing unrelated "removed" code from other merged branches
@@ -120,4 +135,4 @@ Top 5-10 action items for the developer
 
 ## Version
 
-0.1.2
+0.2.0
