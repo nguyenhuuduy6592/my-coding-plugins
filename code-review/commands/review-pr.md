@@ -77,11 +77,9 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
    fi
    ```
 
-4. If the bash output indicates the temp branch is current and up-to-date:
-   - Display: "Local branch pr-${PR_ID}-temp is up-to-date with the remote PR. Using existing branch."
-   - Skip to step 8 (list commits)
+4. If the bash output indicates the temp branch is current and up-to-date, skip to step 7 (list commits).
 
-5. If the bash output indicates the temp branch is stale (current branch is behind remote), prompt the user using `AskUserQuestion`:
+5. If the bash output indicates the temp branch is stale, prompt the user using `AskUserQuestion`:
    ```json
    {
      "questions": [
@@ -117,116 +115,67 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
    fi
    ```
 
-7. Fetch the PR head (if not already fetched in step 3 or step 6):
-   ```bash
-   if ! git fetch origin "pull/${PR_ID}/head:pr-${PR_ID}-temp"; then
-       echo "Error: Failed to fetch PR ${PR_ID}"
-       echo "Possible causes: PR doesn't exist, network issues, or remote not named 'origin'"
-       exit 1
-   fi
-   ```
-
-8. List all commits unique to the PR:
+7. List all commits unique to the PR:
    ```bash
    git log --oneline --graph "${BASE_BRANCH}...pr-${PR_ID}-temp"
    ```
 
-9. Show diff stats summary:
+8. Show diff stats summary:
    ```bash
    git diff --stat "${BASE_BRANCH}...pr-${PR_ID}-temp"
    ```
 
-10. If no commits are found (PR already merged), show message and exit:
-   - "This PR has no commits unique to ${BASE_BRANCH}. It may already be merged."
-   - Exit gracefully
-
 ### Phase 3: Launch 5 Parallel Reviewers
 
-11. Before launching agents, verify the PR has commits to review:
+9. Verify the PR has commits to review:
    ```bash
    COMMITS=$(git log --oneline "${BASE_BRANCH}...pr-${PR_ID}-temp" | wc -l)
    if [ "$COMMITS" -eq 0 ]; then
-       echo "NO_COMMITS"
+       echo "This PR has no commits unique to ${BASE_BRANCH}. It may already be merged."
+       exit 0
    fi
    ```
 
-   If the output is `NO_COMMITS`:
-   - Display: "This PR has no commits unique to ${BASE_BRANCH}. It may already be merged."
-   - Exit gracefully
+10. Check diff size:
+   ```bash
+   DIFF_SIZE=$(git diff "${BASE_BRANCH}...pr-${PR_ID}-temp" | wc -l)
+   if [ "$DIFF_SIZE" -gt 1000 ]; then
+       echo "Large diff detected (${DIFF_SIZE} lines). Agents will focus on critical/high-severity issues only."
+   fi
+   ```
 
-12. Construct the agent prompt with actual values substituted (for example, if PR_ID=254 and BASE_BRANCH=develop):
+11. Construct agent prompt (substitute {PR_ID} and {BASE_BRANCH} with actual values):
+   ```
+   CRITICAL: First step is to IMMEDIATELY run this git command:
+   git diff "{BASE_BRANCH}...pr-{PR_ID}-temp"
 
-   PROMPT_TEMPLATE="Review the pull request with ID {PR_ID}. The changes are between {BASE_BRANCH} and pr-{PR_ID}-temp.
+   Do NOT explore any files before running this command. This git diff shows ALL the changes for PR #{PR_ID}.
 
-   Run this command to see the full diff:
-   git diff \"{BASE_BRANCH}...pr-{PR_ID}-temp\"
+   After getting the diff, analyze ONLY the code introduced in those new commits (not the entire file).
 
-   Analyze ONLY the code introduced in those new commits (not the entire file).
+   Provide your specialized review following your system prompt output format.
+   ```
 
-   Provide your specialized review following your system prompt output format."
+   If DIFF_SIZE > 1000, append: "IMPORTANT: This is a LARGE diff. Focus only on CRITICAL and HIGH severity issues. Limit your output to top 5-7 most important findings."
 
-   Substitute {PR_ID} with the actual PR ID number and {BASE_BRANCH} with the actual base branch name.
-
-13. Display: "Launching 5 parallel specialized reviewers..."
-
-14. Launch all 5 reviewer agents in parallel using a SINGLE message with FIVE Task tool calls:
-   - `bug-correctness-reviewer` - Analyze for bugs and correctness issues
-   - `security-reviewer` - Analyze for security vulnerabilities
-   - `performance-reviewer` - Analyze for performance issues
-   - `code-quality-reviewer` - Analyze for code quality issues
-   - `architecture-reviewer` - Analyze for architecture and best practices
+12. Launch all 5 reviewer agents in parallel using a SINGLE message with FIVE Task tool calls:
+   - `bug-correctness-reviewer`
+   - `security-reviewer`
+   - `performance-reviewer`
+   - `code-quality-reviewer`
+   - `architecture-reviewer`
 
    CRITICAL - Use this EXACT Task tool call format for each agent:
-
-   ```
-   Task tool call for bug-correctness-reviewer:
+   ```json
    {
-     "subagent_type": "code-review:bug-correctness-reviewer",
-     "prompt": "<substituted prompt from step 12>",
-     "run_in_background": true,
-     "timeout": 600000
-   }
-
-   Task tool call for security-reviewer:
-   {
-     "subagent_type": "code-review:security-reviewer",
-     "prompt": "<substituted prompt from step 12>",
-     "run_in_background": true,
-     "timeout": 600000
-   }
-
-   Task tool call for performance-reviewer:
-   {
-     "subagent_type": "code-review:performance-reviewer",
-     "prompt": "<substituted prompt from step 12>",
-     "run_in_background": true,
-     "timeout": 600000
-   }
-
-   Task tool call for code-quality-reviewer:
-   {
-     "subagent_type": "code-review:code-quality-reviewer",
-     "prompt": "<substituted prompt from step 12>",
-     "run_in_background": true,
-     "timeout": 600000
-   }
-
-   Task tool call for architecture-reviewer:
-   {
-     "subagent_type": "code-review:architecture-reviewer",
-     "prompt": "<substituted prompt from step 12>",
+     "subagent_type": "code-review:<agent-name>",
+     "prompt": "<prompt from step 11>",
      "run_in_background": true,
      "timeout": 600000
    }
    ```
 
-   IMPORTANT:
-   - Set `run_in_background: true` for ALL agents
-   - Set `timeout: 600000` (10 minutes) for all agents
-   - Send all 5 Task calls in ONE message
-   - Capture the returned task_id from each Task result
-
-15. After launching, display the captured task IDs in this format:
+13. Display the captured task IDs:
    ```
    Reviewer tasks launched:
    - bug-correctness-reviewer: <task_id_1>
@@ -236,222 +185,35 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
    - architecture-reviewer: <task_id_5>
    ```
 
-16. Verify all agents started successfully:
-   - If any Task call fails or returns an error, display: "Error: Failed to launch [agent-name]. Aborting review."
-   - If any task_id is missing, the review cannot proceed
-
-### Phase 4: Collect and Synthesize Results
-
-17. Collect agent outputs using TaskOutput with the captured task IDs from Phase 3 step 15:
-
-   ```
-   TaskOutput tool call for bug-correctness-reviewer:
+14. Collect agent outputs using TaskOutput with the captured task IDs from step 13:
+   ```json
    {
-     "task_id": "<task_id_1 from step 15>",
-     "block": true
-   }
-
-   TaskOutput tool call for security-reviewer:
-   {
-     "task_id": "<task_id_2 from step 15>",
-     "block": true
-   }
-
-   TaskOutput tool call for performance-reviewer:
-   {
-     "task_id": "<task_id_3 from step 15>",
-     "block": true
-   }
-
-   TaskOutput tool call for code-quality-reviewer:
-   {
-     "task_id": "<task_id_4 from step 15>",
-     "block": true
-   }
-
-   TaskOutput tool call for architecture-reviewer:
-   {
-     "task_id": "<task_id_5 from step 15>",
+     "task_id": "<task_id>",
      "block": true
    }
    ```
+   Send all 5 TaskOutput calls in ONE message. Handle errors gracefully.
 
-   IMPORTANT:
-   - Use `block: true` to wait for each agent to complete
-   - Send all 5 TaskOutput calls in ONE message for parallel retrieval
-   - Handle errors gracefully if an agent fails or times out
+15. Display: "Collecting and synthesizing reviews from all agents..."
 
-18. Handle agent output errors:
-   - If any TaskOutput returns an error, display: "Warning: Failed to retrieve output from [agent-name]. Skipping their review."
-   - If any TaskOutput returns a timeout status, display: "Warning: [agent-name] timed out after 10 minutes. Results may be incomplete."
-   - Continue with the remaining agents' results
+16. Synthesize all agent outputs into a final report:
+   - **Summary**: PR ID, base branch, commits reviewed, files changed
+   - **Critical Blockers**: Issues that MUST be fixed, with severity (Critical/High/Medium) and file:line references
+   - **Final Verdict**: Approve / Approve with suggestions / Request changes
+   - **Average Rating**: Calculate average of all 5 reviewers' ratings (1-10)
+   - **Prioritized Action List**: Top 5-10 action items, prioritized by impact
 
-19. Display: "Collecting and synthesizing reviews from all agents..."
+### Phase 4: Cleanup
 
-20. Synthesize all agent outputs into a final report:
-
-   **Summary Section:**
-   - PR ID and base branch used
-   - Number of commits reviewed
-   - Number of files changed
-
-   **Critical Blockers:**
-   - List any critical issues that MUST be fixed before merge
-   - Categorize by severity (Critical, High, Medium)
-   - Reference specific files and line numbers
-
-   **Final Verdict:**
-   Choose one:
-   - **Approve** - No significant issues, safe to merge
-   - **Approve with suggestions** - Minor improvements recommended but not blocking
-   - **Request changes** - Significant issues that should be addressed before merge
-
-   **Average Rating:**
-   - Calculate average of all 5 reviewers' ratings (1-10 scale)
-   - Display as: "Average Rating: X.X/10"
-
-   **Prioritized Action List:**
-   - List top 5-10 action items for the developer
-   - Prioritize by impact (Critical > High > Medium > Low)
-   - Format: "- [Priority] Description (file:line)"
-
-### Phase 5: Cleanup Reminder
-
-21. Show this message at the end:
+17. Show this message at the end:
    ```
    You can later clean up with: git branch -D pr-${PR_ID}-temp
    ```
 
 ## Agent Output Format
 
-Each agent will output structured markdown:
+Each agent outputs structured markdown with findings, code snippets, and ratings (see individual agent files for details).
 
-```markdown
-## Review Findings
+### Input Validation
 
-### Critical Issues
-- [Issue description] (file:line)
-
-### Medium/Low Issues
-- [Issue description] (file:line)
-
-### Positive Observations
-- [What was done well]
-
-## Code Snippets
-
-### Issue: [Title]
-**Location:** src/file.ts:42
-
-**Before:**
-```typescript
-// original code
-```
-
-**After (suggested):**
-```typescript
-// fixed code
-```
-
-## Rating
-
-**Score:** X/10
-
-**Justification:** [One sentence explaining the score]
-```
-
-## Notes
-
-- The command orchestrates the workflow but doesn't do code analysis itself
-- All 5 agents run in parallel for efficiency
-- The lead reviewer (you) makes independent judgment after considering all inputs
-- The temp branch is left for the user to clean up manually
-
-## Troubleshooting
-
-### Git-Related Errors
-
-**Error: "Couldn't find remote ref"**
-- **Cause**: PR doesn't exist or is inaccessible
-- **Diagnosis**: Run `gh pr view ${PR_ID}` to verify
-- **Solutions**:
-  - Verify PR ID is correct
-  - Check you have repository access
-  - Ensure PR is in the correct repository
-  - Check network connection
-
-**Error: "pathspec 'develop' did not match"**
-- **Cause**: Base branch doesn't exist locally or remotely
-- **Diagnosis**: Run `git branch -r | grep develop`
-- **Solutions**:
-  - List available branches: `git branch -r`
-  - Fetch all branches: `git fetch --all`
-  - Try alternative base branch (main, master)
-  - Create the branch if it should exist
-
-**Error: "fatal: cannot delete branch 'pr-XXX-temp' checked out at"**
-- **Cause**: You're currently on the temp branch
-- **Solutions**:
-  - Switch to main branch first: `git checkout main`
-  - Then delete: `git branch -D pr-XXX-temp`
-
-### Agent-Related Errors
-
-**Error: Agent fails to start or times out**
-- **Cause**: Agent tool not available or configuration issue
-- **Diagnosis**: Check agent is installed with `Skill` tool
-- **Solutions**:
-  - Verify agents are available
-  - Check internet connection
-  - Retry individual agent if one fails
-  - Check Claude Code status
-
-**Error: "No task found with ID" when retrieving output**
-- **Cause**: Task ID was not properly captured or agent was not run in background
-- **Diagnosis**: Check that `run_in_background: true` was set when launching agents
-- **Solutions**:
-  - Verify agents were launched with `run_in_background: true`
-  - Ensure task IDs were captured after launching agents
-  - Check that task IDs are correctly passed to TaskOutput calls
-  - Review Phase 3 step 14 for proper agent launch syntax
-
-**Error: Agent returns 0 tool uses**
-- **Cause**: Agent encountered an error or didn't receive proper prompt
-- **Diagnosis**: Check agent prompt was properly formatted with substituted values
-- **Solutions**:
-  - Verify PR_ID and BASE_BRANCH were correctly substituted in prompt
-  - Check that git diff command in prompt uses correct branch names
-  - Ensure prompt format matches agent's expected input format
-  - Review Phase 3 step 12 for proper prompt construction
-
-### Permission Errors
-
-**Error: "Permission denied (publickey)"**
-- **Cause**: SSH key not configured or invalid
-- **Solutions**:
-  - Check SSH config: `ssh -T git@github.com`
-  - Verify key is loaded: `ssh-add -l`
-  - Consider using HTTPS instead of SSH
-
-### Network Issues
-
-**Error: "Could not resolve host" or "Connection timed out"**
-- **Solutions**:
-  - Check internet connection
-  - Verify VPN/proxy settings
-  - Try again after a few moments
-  - Check GitHub status: https://www.githubstatus.com
-
-### Input Validation Errors
-
-**Error: "PR_ID must be a number"**
-- **Cause**: Non-numeric value provided for PR ID
-- **Solutions**:
-  - Provide only the numeric PR ID (e.g., "271" not "PR-271")
-  - Find PR ID from URL: github.com/user/repo/pull/XXX
-
-**Error: "Branch 'X' does not exist"**
-- **Cause**: Specified base branch doesn't exist
-- **Solutions**:
-  - Run `git branch -r` to see available branches
-  - Use a different base branch (main, master, develop)
+**"PR_ID must be a number"** - Provide only numeric ID (e.g., "271" not "PR-271").

@@ -64,7 +64,7 @@ git branch -D pr-${PR_ID}-temp
 ## Requirements
 
 - Git repository
-- `origin` remote configured
+- Remote configured (`origin` or any git remote)
 - Network access to fetch PR refs
 
 ## Reviewers
@@ -110,6 +110,21 @@ Top 5-10 action items for the developer
 
 ## Version History
 
+### 0.4.0 (2025-12-31)
+- **Fix:** Critical issue where agents analyzed wrong project instead of PR content
+  - Added explicit instruction to run git diff FIRST before any file exploration
+  - Agents no longer wander into current working directory files
+- **Fix:** Output truncation for security and code-quality reviewers on large diffs
+  - Added output constraints (max 5-7 findings, 2-3 sentences each)
+  - Large diff detection (>1000 lines) triggers focused analysis mode
+- **Improvement:** ~50% token reduction in review-pr command
+  - Simplified Task/TaskOutput examples (5 repetitive blocks → 1 template)
+  - Compressed troubleshooting section
+  - Streamlined agent output format reference
+- **Improvement:** Works with any git remote (GitHub, Gitea, GitLab, etc.)
+  - Removed GitHub-specific references from documentation
+- **Docs:** Added troubleshooting for common agent issues
+
 ### 0.3.0 (2025-12-31)
 - **Fix:** Critical issue where agents returned 0 tool uses and TaskOutput retrieval failed with "No task found with ID"
 - **Fix:** Added explicit `run_in_background: true` parameter to all Task tool calls for proper task ID generation
@@ -149,4 +164,4 @@ Top 5-10 action items for the developer
 
 ## Version
 
-0.3.0
+0.4.0

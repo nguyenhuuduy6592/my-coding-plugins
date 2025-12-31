@@ -21,6 +21,10 @@ Enter: `YOUR_USERNAME/my-coding-plugins`. Replace `YOUR_USERNAME` with your GitH
 After adding the marketplace, install plugins using:
 
 ```bash
+# Install code-review plugin
+/plugin install code-review
+
+# Install worktree-dev plugin
 /plugin install worktree-dev
 ```
 
@@ -29,12 +33,14 @@ After adding the marketplace, install plugins using:
 When the marketplace is updated with new versions:
 
 ```bash
+/plugin update code-review
 /plugin update worktree-dev
 ```
 
 Or reinstall to force refresh:
 
 ```bash
+/plugin install code-review --force
 /plugin install worktree-dev --force
 ```
 
@@ -52,9 +58,29 @@ Use the `Tab` key to switch to the `Marketplaces` tab, select your marketplace, 
 
 ## Available Plugins
 
+### code-review
+
+**Version**: 0.4.0
+**Category**: Code Quality
+
+Comprehensive multi-dimensional pull request code review with 5 parallel specialized reviewers.
+
+**Features**:
+- Bug & Correctness analysis
+- Security vulnerability scanning (OWASP Top 10)
+- Performance issue detection (N+1, scalability)
+- Code quality assessment (readability, duplication)
+- Architecture & best practices review
+
+**Usage**:
+```bash
+/code-review:review-pr 271
+/code-review:review-pr 271 main
+```
+
 ### worktree-dev
 
-**Version**: 0.1.0
+**Version**: 0.4.1
 **Category**: Productivity
 
 Streamlined git worktree workflow with integrated feature-dev guidance for parallel feature development.

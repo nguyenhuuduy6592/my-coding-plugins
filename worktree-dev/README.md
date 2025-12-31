@@ -168,6 +168,10 @@ project/
 
 ## Version History
 
+### 0.4.1 (2025-12-31)
+- Update author information
+- Minor documentation improvements
+
 ### 0.4.0 (2025-12-30)
 - Remove process killing step from `worktree-complete`
 - Add error handling with user prompts for any failed step
@@ -189,4 +193,4 @@ project/
 
 ## Version
 
-0.4.0
+0.4.1

@@ -10,7 +10,7 @@
     {
       "name": "worktree-dev",
       "description": "Streamlined git worktree workflow with integrated feature-dev guidance for parallel feature development",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "author": {
         "name": "Claude Code User"
       },
@@ -20,13 +20,13 @@
     {
       "name": "code-review",
       "description": "Comprehensive multi-dimensional pull request code review with 5 parallel specialized reviewers",
-      "version": "0.1.0",
+      "version": "0.4.0",
       "author": {
         "name": "Claude Code User"
       },
       "source": "./code-review",
       "category": "code-quality",
-      "keywords": ["code-review", "pull-request", "pr", "review", "github", "bug", "security", "performance"]
+      "keywords": ["code-review", "pull-request", "pr", "review", "git", "gitea", "github", "bug", "security", "performance"]
     }
   ]
 }
