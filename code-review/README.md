@@ -110,6 +110,11 @@ Top 5-10 action items for the developer
 
 ## Version History
 
+### 0.2.1 (2025-12-31)
+- **Fix:** Remove timestamp-related bash echo commands that were causing unnecessary user permission prompts
+- **Fix:** Agents now properly execute git diff commands instead of hallucinating reviews (fixed variable placeholder substitution issue)
+- **Fix:** All reviewer agents updated to receive actual diff command values instead of `${PR_ID}`/`${BASE_BRANCH}` placeholders
+
 ### 0.2.0 (2025-12-31)
 - **Feature:** Add command argument support for faster usage (`/code-review:review-pr 271 main`)
 - **Feature:** Auto-use `develop` as default base branch without prompting
@@ -135,4 +140,4 @@ Top 5-10 action items for the developer
 
 ## Version
 
-0.2.0
+0.2.1
