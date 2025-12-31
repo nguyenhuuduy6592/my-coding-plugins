@@ -1,6 +1,6 @@
 {
   "name": "code-review",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Comprehensive multi-dimensional pull request code review with specialized parallel reviewers",
   "author": {
     "name": "DuyNH",
