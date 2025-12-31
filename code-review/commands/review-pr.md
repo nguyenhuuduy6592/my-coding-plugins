@@ -181,11 +181,19 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
    ```json
    {
      "subagent_type": "code-review:<agent-name>",
+     "description": "Review PR {PR_ID} for <review-focus>",
      "prompt": "<prompt from step 11>",
      "run_in_background": true,
      "timeout": 600000
    }
    ```
+
+   Where `<review-focus>` is specific to each agent:
+   - bug-correctness-reviewer: "bugs and correctness"
+   - security-reviewer: "security vulnerabilities"
+   - performance-reviewer: "performance issues"
+   - code-quality-reviewer: "code quality"
+   - architecture-reviewer: "architectural design"
 
 13. Display the captured task IDs:
    ```

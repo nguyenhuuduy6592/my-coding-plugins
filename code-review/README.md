@@ -110,6 +110,12 @@ Top 5-10 action items for the developer
 
 ## Version History
 
+### 0.4.2 (2025-12-31)
+- **Fix:** Added missing `description` parameter to Task tool calls in review-pr command
+  - Previous version caused first batch of agents to fail with "0 tool uses"
+  - Agents would then retry with corrected parameters, creating confusing log output
+  - Now all agents launch correctly on first attempt with proper descriptions
+
 ### 0.4.1 (2025-12-31)
 - **Critical Fix:** Agents no longer analyze wrong files - git diff content is now passed directly to agents
   - The parent command now captures git diff output before launching agents
@@ -171,4 +177,4 @@ Top 5-10 action items for the developer
 
 ## Version
 
-0.4.1
+0.4.2
