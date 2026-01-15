@@ -60,7 +60,7 @@ Use the `Tab` key to switch to the `Marketplaces` tab, select your marketplace, 
 
 ### code-review
 
-**Version**: 0.4.0
+**Version**: 0.5.0
 **Category**: Code Quality
 
 Comprehensive multi-dimensional pull request code review with 5 parallel specialized reviewers.

@@ -110,6 +110,16 @@ Top 5-10 action items for the developer
 
 ## Version History
 
+### 0.5.0 (2026-01-15)
+- **Major Improvement:** Simplified branch handling - no more branch switching required
+  - Removed complex stale branch detection logic
+  - Removed user prompts for branch update confirmation
+  - Always fetches `origin/develop` to ensure fresh base branch reference
+  - Uses `git fetch --force` to cleanly create/update temp branches
+  - When on the temp branch being reviewed, uses `git reset --hard` to update in place
+  - Enables truly autonomous PR reviews across multiple concurrent PRs
+  - Workflow simplified from 17 steps to 14 steps
+
 ### 0.4.2 (2025-12-31)
 - **Fix:** Added missing `description` parameter to Task tool calls in review-pr command
   - Previous version caused first batch of agents to fail with "0 tool uses"
@@ -177,4 +187,4 @@ Top 5-10 action items for the developer
 
 ## Version
 
-0.4.2
+0.5.0
