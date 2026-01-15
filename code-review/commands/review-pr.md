@@ -19,12 +19,12 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
 
 2. Determine BASE_BRANCH:
    - If `$2` is provided, use it as BASE_BRANCH
-   - If `$2` is not provided, use `develop` as the default
+   - If `$2` is not provided, use `origin/develop` as the default
    - Display: "Using base branch: ${BASE_BRANCH}"
 
 ### Phase 2: Fetch and Show PR Overview
 
-3. Validate input and check temp branch status:
+3. Validate input and update temp branch:
    ```bash
    # Validate PR_ID is numeric
    if ! [[ "${PR_ID}" =~ ^[0-9]+$ ]]; then
@@ -40,94 +40,47 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
        exit 1
    fi
 
-   # Fetch to FETCH_HEAD for comparison (doesn't require branch creation)
-   if ! git fetch origin "pull/${PR_ID}/head" 2>/dev/null; then
-       echo "Error: Failed to fetch PR ${PR_ID}"
-       echo "Possible causes: PR doesn't exist, network issues, or remote not named 'origin'"
-       exit 1
-   fi
+   # Update base branch reference to ensure it's current
+   echo "Updating ${BASE_BRANCH} reference..."
+   git fetch origin develop
 
-   # Check if temp branch exists
-   if git show-ref --verify --quiet "refs/heads/pr-${PR_ID}-temp"; then
-       # Get commit hashes
-       LOCAL_COMMIT=$(git rev-parse "pr-${PR_ID}-temp")
-       REMOTE_COMMIT=$(git rev-parse FETCH_HEAD)
+   # Fetch and update temp branch
+   CURRENT_BRANCH=$(git branch --show-current)
+   TEMP_BRANCH="pr-${PR_ID}-temp"
 
-       if [ "$(git branch --show-current)" = "pr-${PR_ID}-temp" ]; then
-           # On the temp branch
-           if [ "$LOCAL_COMMIT" = "$REMOTE_COMMIT" ]; then
-               echo "TEMP_BRANCH_CURRENT_UP_TO_DATE"
-           else
-               echo "TEMP_BRANCH_CURRENT_STALE"
-           fi
-       else
-           # Not on temp branch - safe to delete
-           git branch -D "pr-${PR_ID}-temp"
-           if ! git fetch origin "pull/${PR_ID}/head:pr-${PR_ID}-temp"; then
-               echo "Error: Failed to create temp branch"
-               exit 1
-           fi
+   if [ "$CURRENT_BRANCH" = "$TEMP_BRANCH" ]; then
+       # On the temp branch - fetch and reset in place
+       echo "Already on ${TEMP_BRANCH}, updating to latest..."
+       if ! git fetch origin "pull/${PR_ID}/head"; then
+           echo "Error: Failed to fetch PR ${PR_ID}"
+           echo "Possible causes: PR doesn't exist, network issues, or remote not named 'origin'"
+           exit 1
        fi
+       git reset --hard FETCH_HEAD
    else
-       # Temp branch doesn't exist - create it
-       if ! git fetch origin "pull/${PR_ID}/head:pr-${PR_ID}-temp"; then
-           echo "Error: Failed to create temp branch"
+       # Not on temp branch - force fetch (creates or updates)
+       echo "Creating/updating ${TEMP_BRANCH}..."
+       if ! git fetch origin "pull/${PR_ID}/head:${TEMP_BRANCH}" --force; then
+           echo "Error: Failed to fetch PR ${PR_ID}"
+           echo "Possible causes: PR doesn't exist, network issues, or remote not named 'origin'"
            exit 1
        fi
    fi
    ```
 
-4. If the bash output indicates the temp branch is current and up-to-date, skip to step 7 (list commits).
-
-5. If the bash output indicates the temp branch is stale, prompt the user using `AskUserQuestion`:
-   ```json
-   {
-     "questions": [
-       {
-         "question": "You're on branch pr-${PR_ID}-temp which is behind the remote PR. How would you like to proceed?",
-         "header": "Stale branch",
-         "multiSelect": false,
-         "options": [
-           {
-             "label": "Switch and update",
-             "description": "Switch to ${BASE_BRANCH}, delete temp branch, fetch fresh content"
-           },
-           {
-             "label": "Abort",
-             "description": "Stop execution"
-           }
-         ]
-       }
-     ]
-   }
-   ```
-
-6. If user chooses "Switch and update":
-   ```bash
-   if ! git checkout "${BASE_BRANCH}"; then
-       echo "Error: Failed to switch to branch ${BASE_BRANCH}"
-       exit 1
-   fi
-   git branch -D "pr-${PR_ID}-temp"
-   if ! git fetch origin "pull/${PR_ID}/head:pr-${PR_ID}-temp"; then
-       echo "Error: Failed to create temp branch"
-       exit 1
-   fi
-   ```
-
-7. List all commits unique to the PR:
+4. List all commits unique to the PR:
    ```bash
    git log --oneline --graph "${BASE_BRANCH}...pr-${PR_ID}-temp"
    ```
 
-8. Show diff stats summary:
+5. Show diff stats summary:
    ```bash
    git diff --stat "${BASE_BRANCH}...pr-${PR_ID}-temp"
    ```
 
 ### Phase 3: Launch 5 Parallel Reviewers
 
-9. Verify the PR has commits to review:
+6. Verify the PR has commits to review:
    ```bash
    COMMITS=$(git log --oneline "${BASE_BRANCH}...pr-${PR_ID}-temp" | wc -l)
    if [ "$COMMITS" -eq 0 ]; then
@@ -136,7 +89,7 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
    fi
    ```
 
-10. Capture the git diff output (CRITICAL - must be done before launching agents):
+7. Capture the git diff output (CRITICAL - must be done before launching agents):
    ```bash
    echo "Capturing git diff for agent analysis..."
    PR_DIFF=$(git diff "${BASE_BRANCH}...pr-${PR_ID}-temp")
@@ -147,7 +100,7 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
    fi
    ```
 
-11. Construct agent prompt (substitute {PR_ID}, {BASE_BRANCH}, and {PR_DIFF} with actual values):
+8. Construct agent prompt (substitute {PR_ID}, {BASE_BRANCH}, and {PR_DIFF} with actual values):
    ```
    CRITICAL: You are reviewing PR #{PR_ID} against base branch "{BASE_BRANCH}".
 
@@ -170,7 +123,7 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
 
    NOTE: The {PR_DIFF} placeholder will be replaced with the actual git diff output. Be sure to include the complete diff content when launching agents.
 
-12. Launch all 5 reviewer agents in parallel using a SINGLE message with FIVE Task tool calls:
+9. Launch all 5 reviewer agents in parallel using a SINGLE message with FIVE Task tool calls:
    - `bug-correctness-reviewer`
    - `security-reviewer`
    - `performance-reviewer`
@@ -182,7 +135,7 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
    {
      "subagent_type": "code-review:<agent-name>",
      "description": "Review PR {PR_ID} for <review-focus>",
-     "prompt": "<prompt from step 11>",
+     "prompt": "<prompt from step 8>",
      "run_in_background": true,
      "timeout": 600000
    }
@@ -195,7 +148,7 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
    - code-quality-reviewer: "code quality"
    - architecture-reviewer: "architectural design"
 
-13. Display the captured task IDs:
+10. Display the captured task IDs:
    ```
    Reviewer tasks launched:
    - bug-correctness-reviewer: <task_id_1>
@@ -205,7 +158,7 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
    - architecture-reviewer: <task_id_5>
    ```
 
-14. Collect agent outputs using TaskOutput with the captured task IDs from step 13:
+11. Collect agent outputs using TaskOutput with the captured task IDs from step 10:
    ```json
    {
      "task_id": "<task_id>",
@@ -214,9 +167,9 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
    ```
    Send all 5 TaskOutput calls in ONE message. Handle errors gracefully.
 
-15. Display: "Collecting and synthesizing reviews from all agents..."
+12. Display: "Collecting and synthesizing reviews from all agents..."
 
-16. Synthesize all agent outputs into a final report:
+13. Synthesize all agent outputs into a final report:
    - **Summary**: PR ID, base branch, commits reviewed, files changed
    - **Critical Blockers**: Issues that MUST be fixed, with severity (Critical/High/Medium) and file:line references
    - **Final Verdict**: Approve / Approve with suggestions / Request changes
@@ -225,7 +178,7 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
 
 ### Phase 4: Cleanup
 
-17. Show this message at the end:
+14. Show this message at the end:
    ```
    You can later clean up with: git branch -D pr-${PR_ID}-temp
    ```
