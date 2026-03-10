@@ -1,7 +1,7 @@
 ---
 description: Multi-dimensional PR review with parallel specialized reviewers. Auto-discovers PRs across all Talgent Gitea repos.
 argument-hint: [pr-number-or-branch-name]
-allowed-tools: Bash, Read, Task, AskUserQuestion
+allowed-tools: Bash, Read, Agent, AskUserQuestion
 ---
 
 # review-pr - Pull Request Code Review
@@ -102,59 +102,44 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
 
     If DIFF_SIZE > 1000, append: "IMPORTANT: This is a LARGE diff ({DIFF_SIZE} lines). Focus only on CRITICAL and HIGH severity issues. Limit your output to top 5-7 most important findings."
 
-11. Launch all 5 reviewer agents in parallel using a SINGLE message with FIVE Task tool calls:
-    - `bug-correctness-reviewer`
-    - `security-reviewer`
-    - `performance-reviewer`
-    - `code-quality-reviewer`
-    - `architecture-reviewer`
+11. Launch all 5 reviewer agents in parallel using the **Agent tool** (NOT Task tool). Send a SINGLE message with FIVE Agent tool calls:
 
-    CRITICAL - Use this EXACT Task tool call format for each agent:
+    CRITICAL - Use this EXACT Agent tool call format for each agent:
     ```json
     {
       "subagent_type": "code-review:<agent-name>",
       "description": "Review PR {PR_ID} ({REPO_NAME}) for <review-focus>",
       "prompt": "<prompt from step 10>",
-      "run_in_background": true,
-      "timeout": 600000
+      "run_in_background": true
     }
     ```
 
-    Where `<review-focus>` is specific to each agent:
-    - bug-correctness-reviewer: "bugs and correctness"
-    - security-reviewer: "security vulnerabilities"
-    - performance-reviewer: "performance issues"
-    - code-quality-reviewer: "code quality"
-    - architecture-reviewer: "architectural design"
+    Launch these 5 agents:
+    | Agent | subagent_type | description |
+    |-------|--------------|-------------|
+    | Bug & Correctness | `code-review:bug-correctness-reviewer` | "Review PR {PR_ID} ({REPO_NAME}) for bugs and correctness" |
+    | Security | `code-review:security-reviewer` | "Review PR {PR_ID} ({REPO_NAME}) for security vulnerabilities" |
+    | Performance | `code-review:performance-reviewer` | "Review PR {PR_ID} ({REPO_NAME}) for performance issues" |
+    | Code Quality | `code-review:code-quality-reviewer` | "Review PR {PR_ID} ({REPO_NAME}) for code quality" |
+    | Architecture | `code-review:architecture-reviewer` | "Review PR {PR_ID} ({REPO_NAME}) for architectural design" |
 
-12. Display the captured task IDs:
+12. Display:
     ```
-    Reviewer tasks launched for PR #{PR_ID} ({REPO_NAME}):
-    - bug-correctness-reviewer: <task_id_1>
-    - security-reviewer: <task_id_2>
-    - performance-reviewer: <task_id_3>
-    - code-quality-reviewer: <task_id_4>
-    - architecture-reviewer: <task_id_5>
+    5 reviewer agents launched for PR #{PR_ID} ({REPO_NAME}).
+    Waiting for background agents to complete...
     ```
 
 ### Phase 4: Collect and Synthesize
 
-13. Display: "Collecting and synthesizing reviews from all agents..."
+13. Background agents deliver results automatically via `<task-notification>` messages. Do NOT use TaskOutput — it is a different system and will fail with "No task found".
 
-14. Collect agent outputs using TaskOutput with the captured task IDs from step 12:
-    ```json
-    {
-      "task_id": "<task_id>",
-      "block": true
-    }
-    ```
-    Send all 5 TaskOutput calls in ONE message. If an agent returns an error or times out, note which reviewer failed and proceed with available results.
+    Wait for all 5 `<task-notification>` messages. Each contains the agent's review in its `<result>` field. If an agent errors or times out, its notification will indicate failure — note which reviewer failed and proceed with available results.
 
-15. Synthesize all agent outputs into a final report (include only reviewers that returned results):
-    - **Summary**: PR ID, repo name, title, branch info, diff size
+14. Once all available agent results are collected, synthesize into a final report:
+    - **Summary**: PR ID, repo name, title, branch info, diff size, number of reviewers that responded
     - **Critical Blockers**: Issues that MUST be fixed, with severity (Critical/High/Medium) and file:line references
     - **Final Verdict**: Approve / Approve with suggestions / Request changes
-    - **Average Rating**: Calculate average of all 5 reviewers' ratings (1-10)
+    - **Average Rating**: Calculate average of responding reviewers' ratings (1-10)
     - **Prioritized Action List**: Top 5-10 action items, prioritized by impact
 
 ## Agent Output Format

@@ -94,6 +94,15 @@ Top 5-10 action items for the developer
 
 ## Version History
 
+### 0.6.1 (2026-03-11)
+- **Critical Fix:** Replace Task/TaskOutput with Agent tool for launching reviewers
+  - Task/TaskOutput is a task management system, not agent launching
+  - Background agents deliver results via `<task-notification>` messages
+  - This fixes "No task found with ID" errors that prevented collecting review results
+- **Fix:** Add large diff cap (5000+ lines) with user confirmation
+- **Fix:** Add error handling for non-zero exit, agent timeout, partial failure
+- **Fix:** Replace nested PowerShell invocation with `&` operator
+
 ### 0.6.0 (2026-03-11)
 - **Major Feature:** Auto-discover PRs across all Talgent Gitea repos
   - No longer need to be in the correct repo directory
@@ -136,4 +145,4 @@ Top 5-10 action items for the developer
 
 ## Version
 
-0.6.0
+0.6.1
