@@ -32,45 +32,36 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
    ```
    You can query multiple repos in parallel (separate Bash calls).
 
-4. Match PRs against SEARCH_TERM:
-   - If SEARCH_TERM is numeric: match by PR `number` field
+4. Match PRs against SEARCH_TERM. IMPORTANT: collect ALL matches across ALL repos before deciding:
+   - If SEARCH_TERM is numeric: match by PR `number` field. Note: the same PR number can exist in different repos, so check every repo with open PRs.
    - If SEARCH_TERM is non-numeric: match by `head.ref` (branch name) using substring match
 
 5. Handle match results:
-   - **0 matches**: Display "No open PR found matching '{SEARCH_TERM}' across all Talgent repos." and stop.
+   - **0 matches**: Display "No open PR found matching '{SEARCH_TERM}' across all Talgent repos." and mention that only open PRs are searched (use `state=closed` or `state=all` if reviewing a merged PR). Stop.
    - **1 match**: Use it. Display: "Found PR #{number} in {repo}: {title} ({head.ref} -> {base.ref})"
    - **Multiple matches**: Display numbered list and ask user to pick:
      ```
      Multiple PRs found matching '{SEARCH_TERM}':
-     1. [WebApp] PR #368: WKF-560 Title here (branch -> develop)
-     2. [Backend] PR #3: TD-17 Other title (branch -> master)
+     1. [WebApp] PR #368: WKF-560 Title here (WKF-560 -> develop)
+     2. [Backend] PR #3: TD-17 Other title (TD-17 -> master)
      Enter number to review:
      ```
 
-   Store the matched PR's repo name as REPO_NAME, PR number as PR_ID, and PR title as PR_TITLE.
+   Store the matched PR's repo name as REPO_NAME, PR number as PR_ID, PR title as PR_TITLE, and `diff_url` as DIFF_URL.
 
 ### Phase 2: Fetch PR Diff via Gitea API
 
-6. Fetch the PR diff using the `diff_url` from the PR response. The diff URL requires Basic auth (not token auth):
+6. Fetch the PR diff using the helper script's `-RawUrl` parameter (uses Basic auth for web URLs):
    ```bash
-   MSYS_NO_PATHCONV=1 powershell -Command '
-   $credFile = Join-Path $env:USERPROFILE ".git-credentials"
-   $line = Get-Content $credFile | Where-Object { $_ -match "gitea\.talgent\.me" }
-   $uri = [System.Uri]::new($line.Trim())
-   $user = $uri.UserInfo.Split(":")[0]
-   $pass = [System.Uri]::UnescapeDataString($uri.UserInfo.Split(":")[1])
-   $pair = "${user}:${pass}"
-   $b64 = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($pair))
-   $headers = @{ "Authorization" = "Basic $b64" }
-   $resp = Invoke-WebRequest -Uri "https://gitea.talgent.me/Talgent/{REPO_NAME}/pulls/{PR_ID}.diff" -Headers $headers -UseBasicParsing
-   $resp.Content
-   '
+   MSYS_NO_PATHCONV=1 powershell -File D:/Code/Talgent/.claude/skills/gitea/Invoke-Gitea.ps1 -RawUrl "{DIFF_URL}"
    ```
    Store the output as PR_DIFF.
 
+   Validate the response: if PR_DIFF starts with `<!DOCTYPE` or `<html`, the fetch returned a login page instead of diff content. Display "Error: Failed to fetch diff (got HTML instead of diff content). Check Gitea credentials." and stop.
+
    IMPORTANT: No git fetch or local branch creation needed. The diff comes entirely from the Gitea API.
 
-7. Show diff stats summary:
+7. Display diff stats summary:
    ```
    PR #{PR_ID} in {REPO_NAME}: {PR_TITLE}
    Branch: {head.ref} -> {base.ref}
@@ -145,7 +136,11 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
     - architecture-reviewer: <task_id_5>
     ```
 
-13. Collect agent outputs using TaskOutput with the captured task IDs from step 12:
+### Phase 4: Collect and Synthesize
+
+13. Display: "Collecting and synthesizing reviews from all agents..."
+
+14. Collect agent outputs using TaskOutput with the captured task IDs from step 12:
     ```json
     {
       "task_id": "<task_id>",
@@ -153,8 +148,6 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
     }
     ```
     Send all 5 TaskOutput calls in ONE message. Handle errors gracefully.
-
-14. Display: "Collecting and synthesizing reviews from all agents..."
 
 15. Synthesize all agent outputs into a final report:
     - **Summary**: PR ID, repo name, title, branch info, diff size
@@ -170,5 +163,6 @@ Each agent outputs structured markdown with findings, code snippets, and ratings
 ### Input Validation
 
 - SEARCH_TERM can be numeric (PR number) or alphanumeric (branch name)
-- PR numbers are per-repo, so the same number can exist in multiple repos
+- PR numbers are per-repo, so the same number can exist in multiple repos - always search ALL repos
 - Branch names are matched as substrings (e.g., "TD-17" matches "TD-17-fix-oauth")
+- Only open PRs are searched by default. Mention `state=closed` or `state=all` if no matches found
