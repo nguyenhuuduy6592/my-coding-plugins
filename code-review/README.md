@@ -94,6 +94,13 @@ Top 5-10 action items for the developer
 
 ## Version History
 
+### 0.6.2 (2026-03-11)
+- **Critical Fix:** Forcefully prevent TaskOutput calls after agent launch
+  - Claude ignored "Do NOT use TaskOutput" and called it anyway
+  - Rewritten Phase 4 to: "STOP. Do NOTHING. End your response and wait."
+  - Explicitly forbids TaskOutput, reading output files, and manual synthesis
+  - Results arrive passively via `<task-notification>` messages
+
 ### 0.6.1 (2026-03-11)
 - **Critical Fix:** Replace Task/TaskOutput with Agent tool for launching reviewers
   - Task/TaskOutput is a task management system, not agent launching
@@ -145,4 +152,4 @@ Top 5-10 action items for the developer
 
 ## Version
 
-0.6.1
+0.6.2
