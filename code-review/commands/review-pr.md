@@ -20,7 +20,7 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
 2. Query all Talgent org repos to find ones with open PRs:
    ```bash
    MSYS_NO_PATHCONV=1 powershell -Command '
-   $json = powershell -File D:/Code/Talgent/.claude/skills/gitea/Invoke-Gitea.ps1 -Endpoint "/orgs/Talgent/repos?limit=50"
+   $json = & "D:/Code/Talgent/.claude/skills/gitea/Invoke-Gitea.ps1" -Endpoint "/orgs/Talgent/repos?limit=50"
    $repos = $json | ConvertFrom-Json
    $repos | Where-Object { $_.open_pr_counter -gt 0 } | ForEach-Object { $_.name }
    '
@@ -57,7 +57,9 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
    ```
    Store the output as PR_DIFF.
 
-   Validate the response: if PR_DIFF starts with `<!DOCTYPE` or `<html`, the fetch returned a login page instead of diff content. Display "Error: Failed to fetch diff (got HTML instead of diff content). Check Gitea credentials." and stop.
+   Error handling:
+   - If the command exits with non-zero status, display the stderr message and stop.
+   - If PR_DIFF starts with `<!DOCTYPE` or `<html`, the fetch returned a login page. Display "Error: Failed to fetch diff (got HTML instead). Check Gitea credentials." and stop.
 
    IMPORTANT: No git fetch or local branch creation needed. The diff comes entirely from the Gitea API.
 
@@ -75,10 +77,9 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
    If PR_DIFF is empty, display "This PR has no changes to review." and stop.
    ```
 
-9. Determine DIFF_SIZE (line count of PR_DIFF). If DIFF_SIZE > 1000:
-   ```
-   "Large diff detected ({DIFF_SIZE} lines). Agents will focus on critical/high-severity issues only."
-   ```
+9. Determine DIFF_SIZE (line count of PR_DIFF):
+   - If DIFF_SIZE > 5000: Display "Diff is very large ({DIFF_SIZE} lines). This will be sent to 5 agents. Continue? (y/n)" and wait for confirmation. If user declines, stop.
+   - If DIFF_SIZE > 1000: Display "Large diff detected ({DIFF_SIZE} lines). Agents will focus on critical/high-severity issues only."
 
 10. Construct agent prompt (substitute {PR_ID}, {REPO_NAME}, {PR_TITLE}, and {PR_DIFF} with actual values):
     ```
@@ -147,9 +148,9 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
       "block": true
     }
     ```
-    Send all 5 TaskOutput calls in ONE message. Handle errors gracefully.
+    Send all 5 TaskOutput calls in ONE message. If an agent returns an error or times out, note which reviewer failed and proceed with available results.
 
-15. Synthesize all agent outputs into a final report:
+15. Synthesize all agent outputs into a final report (include only reviewers that returned results):
     - **Summary**: PR ID, repo name, title, branch info, diff size
     - **Critical Blockers**: Issues that MUST be fixed, with severity (Critical/High/Medium) and file:line references
     - **Final Verdict**: Approve / Approve with suggestions / Request changes
