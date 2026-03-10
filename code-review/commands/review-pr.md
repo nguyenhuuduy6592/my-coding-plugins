@@ -131,13 +131,17 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
 
 ### Phase 4: Collect and Synthesize
 
-13. Background agents deliver results automatically via `<task-notification>` messages. Do NOT use TaskOutput — it is a different system and will fail with "No task found".
+13. **STOP. Do NOTHING. Just end your response and wait.**
 
-    Wait for `<task-notification>` messages. Each contains the agent's review in its `<result>` field.
+    After launching agents in step 11, you MUST end your current response immediately. Do NOT call any tool. Do NOT try to collect results. Do NOT call TaskOutput (it is a completely different system and WILL fail with "No task found"). Do NOT read output files. Do NOT synthesize manually.
 
-    If not all 5 agents have reported back after a reasonable wait, ask the user: "X of 5 reviewers have responded. Wait for remaining agents or proceed with available results?" If the user chooses to proceed, synthesize with what's available and note which reviewers are missing.
+    Background agents deliver results automatically. When each agent finishes, you will receive a `<task-notification>` message containing the agent's review in its `<result>` field. This happens WITHOUT you doing anything.
 
-14. Once all available agent results are collected, synthesize into a final report:
+    **After receiving all 5 notifications** (or after the user tells you to proceed with partial results), move to step 14.
+
+    If the user asks "where are the results?", explain that background agents are still running and results will arrive automatically. Ask: "X of 5 reviewers have responded so far. Wait for remaining agents or proceed with available results?"
+
+14. Once all available agent results are collected from `<task-notification>` messages, synthesize into a final report:
     - **Summary**: PR ID, repo name, title, branch info, diff size, number of reviewers that responded
     - **Critical Blockers**: Issues that MUST be fixed, with severity (Critical/High/Medium) and file:line references
     - **Final Verdict**: Approve / Approve with suggestions / Request changes
