@@ -1,187 +1,167 @@
 ---
-description: Multi-dimensional PR review with parallel specialized reviewers
-argument-hint: [pr-number] [base-branch]
+description: Multi-dimensional PR review with parallel specialized reviewers. Auto-discovers PRs across all Talgent Gitea repos.
+argument-hint: [pr-number-or-branch-name]
 allowed-tools: Bash, Read, Task, AskUserQuestion
 ---
 
 # review-pr - Pull Request Code Review
 
-This command performs a comprehensive PR review using 5 parallel specialized reviewers.
+This command performs a comprehensive PR review using 5 parallel specialized reviewers. It auto-discovers which Gitea repo the PR belongs to.
 
 ## Workflow
 
-### Phase 1: Gather PR Information
+### Phase 1: Discover PR Across Repos
 
-1. Determine PR_ID and BASE_BRANCH from arguments or user input:
-   - If `$1` is provided, use it as PR_ID
-   - If `$1` is not provided, ask the user for the PR ID (just the number, e.g., `271`)
-   - Wait for user to provide the PR ID before proceeding
+1. Determine SEARCH_TERM from arguments or user input:
+   - If `$1` is provided, use it as SEARCH_TERM (can be a PR number like `3` or a branch name like `TD-17`)
+   - If `$1` is not provided, ask the user: "Enter a PR number or branch name to review"
+   - Wait for user to provide the value before proceeding
 
-2. Determine BASE_BRANCH:
-   - If `$2` is provided, use it as BASE_BRANCH
-   - If `$2` is not provided, use `origin/develop` as the default
-   - Display: "Using base branch: ${BASE_BRANCH}"
-
-### Phase 2: Fetch and Show PR Overview
-
-3. Validate input and update temp branch:
+2. Query all Talgent org repos to find ones with open PRs:
    ```bash
-   # Validate PR_ID is numeric
-   if ! [[ "${PR_ID}" =~ ^[0-9]+$ ]]; then
-       echo "Error: PR_ID must be a number"
-       exit 1
-   fi
-
-   # Validate BASE_BRANCH exists
-   if ! git rev-parse --verify "${BASE_BRANCH}" >/dev/null 2>&1; then
-       echo "Error: Branch '${BASE_BRANCH}' does not exist"
-       echo "Available branches:"
-       git branch -r
-       exit 1
-   fi
-
-   # Update base branch reference to ensure it's current
-   echo "Updating ${BASE_BRANCH} reference..."
-   git fetch origin develop
-
-   # Fetch and update temp branch
-   CURRENT_BRANCH=$(git branch --show-current)
-   TEMP_BRANCH="pr-${PR_ID}-temp"
-
-   if [ "$CURRENT_BRANCH" = "$TEMP_BRANCH" ]; then
-       # On the temp branch - fetch and reset in place
-       echo "Already on ${TEMP_BRANCH}, updating to latest..."
-       if ! git fetch origin "pull/${PR_ID}/head"; then
-           echo "Error: Failed to fetch PR ${PR_ID}"
-           echo "Possible causes: PR doesn't exist, network issues, or remote not named 'origin'"
-           exit 1
-       fi
-       git reset --hard FETCH_HEAD
-   else
-       # Not on temp branch - force fetch (creates or updates)
-       echo "Creating/updating ${TEMP_BRANCH}..."
-       if ! git fetch origin "pull/${PR_ID}/head:${TEMP_BRANCH}" --force; then
-           echo "Error: Failed to fetch PR ${PR_ID}"
-           echo "Possible causes: PR doesn't exist, network issues, or remote not named 'origin'"
-           exit 1
-       fi
-   fi
+   MSYS_NO_PATHCONV=1 powershell -Command '
+   $json = powershell -File D:/Code/Talgent/.claude/skills/gitea/Invoke-Gitea.ps1 -Endpoint "/orgs/Talgent/repos?limit=50"
+   $repos = $json | ConvertFrom-Json
+   $repos | Where-Object { $_.open_pr_counter -gt 0 } | ForEach-Object { $_.name }
+   '
    ```
 
-4. List all commits unique to the PR:
+3. For each repo with open PRs, list all open PRs:
    ```bash
-   git log --oneline --graph "${BASE_BRANCH}...pr-${PR_ID}-temp"
+   MSYS_NO_PATHCONV=1 powershell -File D:/Code/Talgent/.claude/skills/gitea/Invoke-Gitea.ps1 -Endpoint "/repos/Talgent/{REPO_NAME}/pulls?state=open"
    ```
+   You can query multiple repos in parallel (separate Bash calls).
 
-5. Show diff stats summary:
+4. Match PRs against SEARCH_TERM:
+   - If SEARCH_TERM is numeric: match by PR `number` field
+   - If SEARCH_TERM is non-numeric: match by `head.ref` (branch name) using substring match
+
+5. Handle match results:
+   - **0 matches**: Display "No open PR found matching '{SEARCH_TERM}' across all Talgent repos." and stop.
+   - **1 match**: Use it. Display: "Found PR #{number} in {repo}: {title} ({head.ref} -> {base.ref})"
+   - **Multiple matches**: Display numbered list and ask user to pick:
+     ```
+     Multiple PRs found matching '{SEARCH_TERM}':
+     1. [WebApp] PR #368: WKF-560 Title here (branch -> develop)
+     2. [Backend] PR #3: TD-17 Other title (branch -> master)
+     Enter number to review:
+     ```
+
+   Store the matched PR's repo name as REPO_NAME, PR number as PR_ID, and PR title as PR_TITLE.
+
+### Phase 2: Fetch PR Diff via Gitea API
+
+6. Fetch the PR diff using the `diff_url` from the PR response. The diff URL requires Basic auth (not token auth):
    ```bash
-   git diff --stat "${BASE_BRANCH}...pr-${PR_ID}-temp"
+   MSYS_NO_PATHCONV=1 powershell -Command '
+   $credFile = Join-Path $env:USERPROFILE ".git-credentials"
+   $line = Get-Content $credFile | Where-Object { $_ -match "gitea\.talgent\.me" }
+   $uri = [System.Uri]::new($line.Trim())
+   $user = $uri.UserInfo.Split(":")[0]
+   $pass = [System.Uri]::UnescapeDataString($uri.UserInfo.Split(":")[1])
+   $pair = "${user}:${pass}"
+   $b64 = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($pair))
+   $headers = @{ "Authorization" = "Basic $b64" }
+   $resp = Invoke-WebRequest -Uri "https://gitea.talgent.me/Talgent/{REPO_NAME}/pulls/{PR_ID}.diff" -Headers $headers -UseBasicParsing
+   $resp.Content
+   '
+   ```
+   Store the output as PR_DIFF.
+
+   IMPORTANT: No git fetch or local branch creation needed. The diff comes entirely from the Gitea API.
+
+7. Show diff stats summary:
+   ```
+   PR #{PR_ID} in {REPO_NAME}: {PR_TITLE}
+   Branch: {head.ref} -> {base.ref}
+   Diff size: {line count} lines
    ```
 
 ### Phase 3: Launch 5 Parallel Reviewers
 
-6. Verify the PR has commits to review:
-   ```bash
-   COMMITS=$(git log --oneline "${BASE_BRANCH}...pr-${PR_ID}-temp" | wc -l)
-   if [ "$COMMITS" -eq 0 ]; then
-       echo "This PR has no commits unique to ${BASE_BRANCH}. It may already be merged."
-       exit 0
-   fi
+8. Check diff is non-empty:
+   ```
+   If PR_DIFF is empty, display "This PR has no changes to review." and stop.
    ```
 
-7. Capture the git diff output (CRITICAL - must be done before launching agents):
-   ```bash
-   echo "Capturing git diff for agent analysis..."
-   PR_DIFF=$(git diff "${BASE_BRANCH}...pr-${PR_ID}-temp")
-   DIFF_SIZE=$(echo "$PR_DIFF" | wc -l)
-
-   if [ "$DIFF_SIZE" -gt 1000 ]; then
-       echo "Large diff detected (${DIFF_SIZE} lines). Agents will focus on critical/high-severity issues only."
-   fi
+9. Determine DIFF_SIZE (line count of PR_DIFF). If DIFF_SIZE > 1000:
+   ```
+   "Large diff detected ({DIFF_SIZE} lines). Agents will focus on critical/high-severity issues only."
    ```
 
-8. Construct agent prompt (substitute {PR_ID}, {BASE_BRANCH}, and {PR_DIFF} with actual values):
-   ```
-   CRITICAL: You are reviewing PR #{PR_ID} against base branch "{BASE_BRANCH}".
+10. Construct agent prompt (substitute {PR_ID}, {REPO_NAME}, {PR_TITLE}, and {PR_DIFF} with actual values):
+    ```
+    CRITICAL: You are reviewing PR #{PR_ID} in repo {REPO_NAME}: "{PR_TITLE}".
 
-   Below is the COMPLETE git diff output for this PR. Analyze ONLY this diff content:
+    Below is the COMPLETE diff output for this PR. Analyze ONLY this diff content:
 
-   --- START OF GIT DIFF ---
-   {PR_DIFF}
-   --- END OF GIT DIFF ---
+    --- START OF DIFF ---
+    {PR_DIFF}
+    --- END OF DIFF ---
 
-   IMPORTANT INSTRUCTIONS:
-   - Analyze ONLY the code shown in the diff above (lines added/modified with + prefix)
-   - Do NOT explore any files with Glob/Grep/Read - the diff contains everything you need
-   - Do NOT analyze files from the current working directory
-   - Focus your review on the changes shown in this diff
+    IMPORTANT INSTRUCTIONS:
+    - Analyze ONLY the code shown in the diff above (lines added/modified with + prefix)
+    - Do NOT explore any files with Glob/Grep/Read - the diff contains everything you need
+    - Do NOT analyze files from the current working directory
+    - Focus your review on the changes shown in this diff
 
-   Provide your specialized review following your system prompt output format.
-   ```
+    Provide your specialized review following your system prompt output format.
+    ```
 
-   If DIFF_SIZE > 1000, append: "IMPORTANT: This is a LARGE diff (${DIFF_SIZE} lines). Focus only on CRITICAL and HIGH severity issues. Limit your output to top 5-7 most important findings."
+    If DIFF_SIZE > 1000, append: "IMPORTANT: This is a LARGE diff ({DIFF_SIZE} lines). Focus only on CRITICAL and HIGH severity issues. Limit your output to top 5-7 most important findings."
 
-   NOTE: The {PR_DIFF} placeholder will be replaced with the actual git diff output. Be sure to include the complete diff content when launching agents.
+11. Launch all 5 reviewer agents in parallel using a SINGLE message with FIVE Task tool calls:
+    - `bug-correctness-reviewer`
+    - `security-reviewer`
+    - `performance-reviewer`
+    - `code-quality-reviewer`
+    - `architecture-reviewer`
 
-9. Launch all 5 reviewer agents in parallel using a SINGLE message with FIVE Task tool calls:
-   - `bug-correctness-reviewer`
-   - `security-reviewer`
-   - `performance-reviewer`
-   - `code-quality-reviewer`
-   - `architecture-reviewer`
+    CRITICAL - Use this EXACT Task tool call format for each agent:
+    ```json
+    {
+      "subagent_type": "code-review:<agent-name>",
+      "description": "Review PR {PR_ID} ({REPO_NAME}) for <review-focus>",
+      "prompt": "<prompt from step 10>",
+      "run_in_background": true,
+      "timeout": 600000
+    }
+    ```
 
-   CRITICAL - Use this EXACT Task tool call format for each agent:
-   ```json
-   {
-     "subagent_type": "code-review:<agent-name>",
-     "description": "Review PR {PR_ID} for <review-focus>",
-     "prompt": "<prompt from step 8>",
-     "run_in_background": true,
-     "timeout": 600000
-   }
-   ```
+    Where `<review-focus>` is specific to each agent:
+    - bug-correctness-reviewer: "bugs and correctness"
+    - security-reviewer: "security vulnerabilities"
+    - performance-reviewer: "performance issues"
+    - code-quality-reviewer: "code quality"
+    - architecture-reviewer: "architectural design"
 
-   Where `<review-focus>` is specific to each agent:
-   - bug-correctness-reviewer: "bugs and correctness"
-   - security-reviewer: "security vulnerabilities"
-   - performance-reviewer: "performance issues"
-   - code-quality-reviewer: "code quality"
-   - architecture-reviewer: "architectural design"
+12. Display the captured task IDs:
+    ```
+    Reviewer tasks launched for PR #{PR_ID} ({REPO_NAME}):
+    - bug-correctness-reviewer: <task_id_1>
+    - security-reviewer: <task_id_2>
+    - performance-reviewer: <task_id_3>
+    - code-quality-reviewer: <task_id_4>
+    - architecture-reviewer: <task_id_5>
+    ```
 
-10. Display the captured task IDs:
-   ```
-   Reviewer tasks launched:
-   - bug-correctness-reviewer: <task_id_1>
-   - security-reviewer: <task_id_2>
-   - performance-reviewer: <task_id_3>
-   - code-quality-reviewer: <task_id_4>
-   - architecture-reviewer: <task_id_5>
-   ```
+13. Collect agent outputs using TaskOutput with the captured task IDs from step 12:
+    ```json
+    {
+      "task_id": "<task_id>",
+      "block": true
+    }
+    ```
+    Send all 5 TaskOutput calls in ONE message. Handle errors gracefully.
 
-11. Collect agent outputs using TaskOutput with the captured task IDs from step 10:
-   ```json
-   {
-     "task_id": "<task_id>",
-     "block": true
-   }
-   ```
-   Send all 5 TaskOutput calls in ONE message. Handle errors gracefully.
+14. Display: "Collecting and synthesizing reviews from all agents..."
 
-12. Display: "Collecting and synthesizing reviews from all agents..."
-
-13. Synthesize all agent outputs into a final report:
-   - **Summary**: PR ID, base branch, commits reviewed, files changed
-   - **Critical Blockers**: Issues that MUST be fixed, with severity (Critical/High/Medium) and file:line references
-   - **Final Verdict**: Approve / Approve with suggestions / Request changes
-   - **Average Rating**: Calculate average of all 5 reviewers' ratings (1-10)
-   - **Prioritized Action List**: Top 5-10 action items, prioritized by impact
-
-### Phase 4: Cleanup
-
-14. Show this message at the end:
-   ```
-   You can later clean up with: git branch -D pr-${PR_ID}-temp
-   ```
+15. Synthesize all agent outputs into a final report:
+    - **Summary**: PR ID, repo name, title, branch info, diff size
+    - **Critical Blockers**: Issues that MUST be fixed, with severity (Critical/High/Medium) and file:line references
+    - **Final Verdict**: Approve / Approve with suggestions / Request changes
+    - **Average Rating**: Calculate average of all 5 reviewers' ratings (1-10)
+    - **Prioritized Action List**: Top 5-10 action items, prioritized by impact
 
 ## Agent Output Format
 
@@ -189,4 +169,6 @@ Each agent outputs structured markdown with findings, code snippets, and ratings
 
 ### Input Validation
 
-**"PR_ID must be a number"** - Provide only numeric ID (e.g., "271" not "PR-271").
+- SEARCH_TERM can be numeric (PR number) or alphanumeric (branch name)
+- PR numbers are per-repo, so the same number can exist in multiple repos
+- Branch names are matched as substrings (e.g., "TD-17" matches "TD-17-fix-oauth")

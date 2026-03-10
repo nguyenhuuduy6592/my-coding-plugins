@@ -6,20 +6,17 @@ A comprehensive multi-dimensional pull request code review plugin for Claude Cod
 
 `code-review` performs thorough PR reviews using 5 specialized parallel reviewers, each focusing on a different aspect of code quality:
 
-- **Bug & Correctness** – Logical errors, edge cases, nulls, wrong assumptions
-- **Security** – Vulnerabilities, injections, auth bypass, secrets, OWASP
-- **Performance** – Slow queries, N+1, redundant work, scalability risks
-- **Code Quality** – Readability, naming, duplication, structure, comments, standards
-- **Architecture & Best Practices** – Design, separation of concerns, testability, error handling, logging
+- **Bug & Correctness** - Logical errors, edge cases, nulls, wrong assumptions
+- **Security** - Vulnerabilities, injections, auth bypass, secrets, OWASP
+- **Performance** - Slow queries, N+1, redundant work, scalability risks
+- **Code Quality** - Readability, naming, duplication, structure, comments, standards
+- **Architecture & Best Practices** - Design, separation of concerns, testability, error handling, logging
 
 ## Installation
 
 Place this plugin in your Claude Code plugins directory:
 
 ```bash
-# Via marketplace (coming soon)
-claude plugin install code-review
-
 # Or manually
 cp -r code-review ~/.claude/plugins/
 ```
@@ -29,43 +26,35 @@ cp -r code-review ~/.claude/plugins/
 ### Review a Pull Request
 
 ```bash
-# Quick review with default base branch (develop)
-/code-review:review-pr 271
+# By PR number (auto-discovers which repo)
+/code-review:review-pr 3
 
-# Specify both PR number and base branch
-/code-review:review-pr 271 main
+# By branch name
+/code-review:review-pr TD-17
 
-# Interactive mode (prompts for PR number)
+# Interactive mode (prompts for PR number or branch)
 /code-review:review-pr
 ```
 
 The command accepts:
-1. **PR ID** – The pull request number (e.g., `271`)
-2. **Base branch** (optional) – The branch to compare against (default: `develop`)
+1. **PR number or branch name** - Searches all Talgent Gitea repos for matching open PRs
 
 The plugin will:
-1. Fetch the PR head safely: `git fetch origin pull/${PR_ID}/head:pr-${PR_ID}-temp`
-2. List all commits on the PR: `git log --oneline --graph develop...pr-${PR_ID}-temp`
-3. Show diff stats: `git diff --stat develop...pr-${PR_ID}-temp`
-4. Launch 5 parallel specialized reviewers
-5. Provide a final verdict with:
+1. Query all Talgent org repos on Gitea for open PRs
+2. Match by PR number or branch name (substring match)
+3. If multiple matches, present a numbered list to choose from
+4. Fetch the PR diff via Gitea API (no local git fetch needed)
+5. Launch 5 parallel specialized reviewers
+6. Provide a final verdict with:
    - Critical blockers (if any)
    - Verdict: Approve / Approve with suggestions / Request changes
    - Prioritized action list
 
-### Cleanup
-
-After review, clean up the temporary branch:
-
-```bash
-git branch -D pr-${PR_ID}-temp
-```
-
 ## Requirements
 
-- Git repository
-- Remote configured (`origin` or any git remote)
-- Network access to fetch PR refs
+- Gitea credentials in `~/.git-credentials` (for gitea.talgent.me)
+- Gitea helper script at `D:/Code/Talgent/.claude/skills/gitea/Invoke-Gitea.ps1`
+- PowerShell (for Gitea API calls)
 
 ## Reviewers
 
@@ -90,8 +79,7 @@ The final review includes:
 
 ```markdown
 ## Summary
-- PR ID and base branch
-- Number of commits and files changed
+- PR ID, repo name, title, branch info
 
 ## Critical Blockers
 Issues that MUST be fixed before merge
@@ -104,87 +92,48 @@ Issues that MUST be fixed before merge
 Top 5-10 action items for the developer
 ```
 
-## Roadmap
-
-- [ ] `review-branch` – Review feature branches against base branches
-
 ## Version History
+
+### 0.6.0 (2026-03-11)
+- **Major Feature:** Auto-discover PRs across all Talgent Gitea repos
+  - No longer need to be in the correct repo directory
+  - Search by PR number or branch name (substring match)
+  - If multiple matches found, presents numbered list to choose from
+- **Major Improvement:** Fetch diff via Gitea API instead of git fetch
+  - No local temp branches created or cleaned up
+  - Works from any directory regardless of git context
+  - Uses Gitea diff_url with Basic auth
+- **Removed:** git fetch, temp branch creation, cleanup phase
+- **Removed:** BASE_BRANCH parameter (no longer needed - diff comes from Gitea)
 
 ### 0.5.0 (2026-01-15)
 - **Major Improvement:** Simplified branch handling - no more branch switching required
-  - Removed complex stale branch detection logic
-  - Removed user prompts for branch update confirmation
-  - Always fetches `origin/develop` to ensure fresh base branch reference
   - Uses `git fetch --force` to cleanly create/update temp branches
-  - When on the temp branch being reviewed, uses `git reset --hard` to update in place
   - Enables truly autonomous PR reviews across multiple concurrent PRs
-  - Workflow simplified from 17 steps to 14 steps
 
 ### 0.4.2 (2025-12-31)
-- **Fix:** Added missing `description` parameter to Task tool calls in review-pr command
-  - Previous version caused first batch of agents to fail with "0 tool uses"
-  - Agents would then retry with corrected parameters, creating confusing log output
-  - Now all agents launch correctly on first attempt with proper descriptions
+- **Fix:** Added missing `description` parameter to Task tool calls
 
 ### 0.4.1 (2025-12-31)
-- **Critical Fix:** Agents no longer analyze wrong files - git diff content is now passed directly to agents
-  - The parent command now captures git diff output before launching agents
-  - Agents receive the complete diff content in their prompt instead of running git diff themselves
-  - This fixes the issue where background agents would analyze files from a different codebase
-  - All 5 reviewers updated to use provided diff content instead of running git commands
+- **Critical Fix:** Agents no longer analyze wrong files - git diff content passed directly
 
 ### 0.4.0 (2025-12-31)
 - **Fix:** Critical issue where agents analyzed wrong project instead of PR content
-  - Added explicit instruction to run git diff FIRST before any file exploration
-  - Agents no longer wander into current working directory files
-- **Fix:** Output truncation for security and code-quality reviewers on large diffs
-  - Added output constraints (max 5-7 findings, 2-3 sentences each)
-  - Large diff detection (>1000 lines) triggers focused analysis mode
+- **Fix:** Output truncation for large diffs
 - **Improvement:** ~50% token reduction in review-pr command
-  - Simplified Task/TaskOutput examples (5 repetitive blocks → 1 template)
-  - Compressed troubleshooting section
-  - Streamlined agent output format reference
-- **Improvement:** Works with any git remote (GitHub, Gitea, GitLab, etc.)
-  - Removed GitHub-specific references from documentation
-- **Docs:** Added troubleshooting for common agent issues
 
 ### 0.3.0 (2025-12-31)
-- **Fix:** Critical issue where agents returned 0 tool uses and TaskOutput retrieval failed with "No task found with ID"
-- **Fix:** Added explicit `run_in_background: true` parameter to all Task tool calls for proper task ID generation
-- **Fix:** Added explicit TaskOutput syntax with `block: true` for proper result collection
-- **Improvement:** Added task ID capture and display format for better debugging
-- **Improvement:** Added agent launch verification and error handling steps
-- **Improvement:** Added prompt template with clear variable substitution instructions
-- **Documentation:** Added new troubleshooting sections for "No task found with ID" and "Agent returns 0 tool uses" errors
+- **Fix:** Critical issue where agents returned 0 tool uses
 
 ### 0.2.1 (2025-12-31)
-- **Fix:** Remove timestamp-related bash echo commands that were causing unnecessary user permission prompts
-- **Fix:** Agents now properly execute git diff commands instead of hallucinating reviews (fixed variable placeholder substitution issue)
-- **Fix:** All reviewer agents updated to receive actual diff command values instead of `${PR_ID}`/`${BASE_BRANCH}` placeholders
+- **Fix:** Agents now properly execute git diff commands
 
 ### 0.2.0 (2025-12-31)
-- **Feature:** Add command argument support for faster usage (`/code-review:review-pr 271 main`)
-- **Feature:** Auto-use `develop` as default base branch without prompting
-- **Improvement:** Add proper frontmatter fields (`allowed-tools`, `argument-hint`)
-- **Improvement:** Add validation to prevent launching agents on empty/merged PRs
-- **Refactor:** Rewrite documentation-style sections as direct Claude instructions
-- **UX:** Display "Using base branch: X" message for clarity
-
-### 0.1.2 (2025-12-31)
-- Fix: Use three-dot diff (`...`) instead of two-dot diff (`..`) to show only PR-specific changes
-- This prevents showing unrelated "removed" code from other merged branches
-
-### 0.1.1 (2025-12-31)
-- Fix: Plugin author nane
+- **Feature:** Add command argument support
 
 ### 0.1.0 (2025-12-31)
 - Initial release
-- 5 parallel specialized reviewers (Bug, Security, Performance, Code Quality, Architecture)
-- Interactive PR ID and base branch prompts
-- Git fetch, commit log, and diff stats display
-- Final verdict with average rating and prioritized action list
-- Cleanup command reminder
 
 ## Version
 
-0.5.0
+0.6.0
