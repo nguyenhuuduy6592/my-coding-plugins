@@ -133,7 +133,9 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
 
 13. Background agents deliver results automatically via `<task-notification>` messages. Do NOT use TaskOutput — it is a different system and will fail with "No task found".
 
-    Wait for all 5 `<task-notification>` messages. Each contains the agent's review in its `<result>` field. If an agent errors or times out, its notification will indicate failure — note which reviewer failed and proceed with available results.
+    Wait for `<task-notification>` messages. Each contains the agent's review in its `<result>` field.
+
+    If not all 5 agents have reported back after a reasonable wait, ask the user: "X of 5 reviewers have responded. Wait for remaining agents or proceed with available results?" If the user chooses to proceed, synthesize with what's available and note which reviewers are missing.
 
 14. Once all available agent results are collected, synthesize into a final report:
     - **Summary**: PR ID, repo name, title, branch info, diff size, number of reviewers that responded
