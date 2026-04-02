@@ -67,7 +67,7 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
    ```
    PR #{PR_ID} in {REPO_NAME}: {PR_TITLE}
    Branch: {head.ref} -> {base.ref}
-   Diff size: {line count} lines
+   Diff: {additions} additions, {deletions} deletions, {total} total lines
    ```
 
 ### Phase 3: Launch 5 Parallel Reviewers
@@ -79,7 +79,7 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
 
 9. Determine DIFF_SIZE (line count of PR_DIFF):
    - If DIFF_SIZE > 5000: Display "Diff is very large ({DIFF_SIZE} lines). This will be sent to 5 agents. Continue? (y/n)" and wait for confirmation. If user declines, stop.
-   - If DIFF_SIZE > 1000: Display "Large diff detected ({DIFF_SIZE} lines). Agents will focus on critical/high-severity issues only."
+   - If DIFF_SIZE > 3000: Display "⚠️ Review is based on partial diff (first 3000 of {DIFF_SIZE} total lines). Agents will focus on critical/high-severity issues only."
 
 10. Construct agent prompt (substitute {PR_ID}, {REPO_NAME}, {PR_TITLE}, and {PR_DIFF} with actual values):
     ```
@@ -100,7 +100,11 @@ This command performs a comprehensive PR review using 5 parallel specialized rev
     Provide your specialized review following your system prompt output format.
     ```
 
-    If DIFF_SIZE > 1000, append: "IMPORTANT: This is a LARGE diff ({DIFF_SIZE} lines). Focus only on CRITICAL and HIGH severity issues. Limit your output to top 5-7 most important findings."
+    If DIFF_SIZE > 3000, append: "IMPORTANT: This is a LARGE diff ({DIFF_SIZE} lines). Focus only on CRITICAL and HIGH severity issues. Limit your output to top 5-7 most important findings."
+
+    CRITICAL CONSTRAINTS:
+    - The SAME diff content must be passed to all 5 reviewers - do not truncate/summarize differently per reviewer
+    - If truncating diff (any size), you MUST inform user: "⚠️ Review is based on partial diff (first X lines)"
 
 11. Launch all 5 reviewer agents in parallel using the **Agent tool** (NOT Task tool). Send a SINGLE message with FIVE Agent tool calls:
 
