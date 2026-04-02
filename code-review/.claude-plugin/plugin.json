@@ -1,6 +1,6 @@
 {
   "name": "code-review",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "Multi-dimensional PR code review with parallel specialized reviewers. Auto-discovers PRs across all Gitea repos.",
   "author": {
     "name": "DuyNH"
